@@ -65,7 +65,7 @@ ISR(TIMER0_OVF_vect){
   static uint8_t display_count = 0x01; //holds count for display 
 
   count_7ms++;                //increment count every 7.8125 ms 
-  if ((count_7ms % 64 == 0)){ //?? interrupts equals one half second 
+  if ((count_7ms % 128 == 0)){ // interrupts equals one second 
     SPDR = display_count;//send to display 
     while(bit_is_clear(SPSR,SPIF)) {}//wait till data sent out (while spin loop)
     PORTB |=  0x01;//strobe HC595 output data reg - rising edge
