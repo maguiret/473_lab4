@@ -134,14 +134,6 @@ position(uint16_t x){
  thousand = (value %10000)/1000;
  
 }
-/* turns off the 7-seg and flips PORTB from output to input
-*/
-void segButtonInputSet(){
- PORTB = 0x70;                          // tristate buffer for pushbuttons enabled
- DDRA = 0x00;                           // PORTA set as input
- PORTA = 0xFF;                          // PORTA as pullups
- _delay_ms(1);
-}
 
 void segButtonOutputSet(){
  DDRA = 0xFF;                           // segments on/pushbuttons off
@@ -155,23 +147,13 @@ void segButtonInit(){
  PORTB = 0x00;				// digit 4. one = 0x00 ten = 0x10 
 					//hundred = 0x30 thousand = 0x40
 }
-void spi_init(void){
-  DDRB  |=   0x07;//Turn on SS, MOSI, SCLK
-  SPCR  |=   (1<<SPE)|(1<<MSTR);//set up SPI mode
-  SPSR  |=   (1<<SPI2X);// double speed operation
- }//spi_init
 
 void tcnt0_init(void){
   ASSR   |=  (1<<AS0);//ext osc TOSC
   TIMSK  |=  (1<<TOIE0);//enable timer/counter0 overflow interrupt
   TCCR0  |=  (1<<CS00);//normal mode, no prescale
 }
-
-void encoder_init(){
- DDRE = 0xFF;			// Set PORTE as output
-// PORTE = (0<<PE7);		// SETTING sin TO 0
  
-}
 
 ISR(TIMER0_OVF_vect){
   static uint8_t count_7ms = 0;
@@ -180,87 +162,22 @@ ISR(TIMER0_OVF_vect){
   if((count_7ms %128) == 0){
     switch_count++;
   }
-
-
-// segButtonInputSet();			// change PORTA to read buttons
-//  if(debounceSwitch(PINA, 0)){
-//   if(mode == 2){			// if you're already incrementing by 2
-//    mode = 1;				// change to increment by 1
-//   }
-//    else if(mode == 4){		// if you're incrementing by 4
-//     mode = 0;			// change to increment by 0 
-//    }
-//   else{ 
-//    mode = 2;
-//   }
-//  }
-//  /* the code below changes mode when PINA.1 is pressed
-//  */
-//  else if(debounceSwitch(PINA,1)){
-//   if(mode == 4){
-//    mode = 1;
-//   }
-//   else if(mode == 2){
-//     mode = 0;	
-//   }
-//   else{
-//    mode = 4;
-//   }
-//  }
-///****************************
-//get the encoder data ready
-//****************************/
-//// loading encoder data into shift register
-// PORTE |= (1<<PE5);		// sets CLK INH high
-// PORTE &= ~(1<<PE6);		// toggle low to high		
-// PORTE |= (1<<PE6);		// Strobing SHLD
-////shifting data out to MISO
-// PORTE &= ~(1<<PE5);
-//
-///*
-//Translates from buttonState to LEDs being displayed (mode
-//*/
-// if(mode == 0){
-//  SPDR = 0x00;
-// }
-// else if(mode == 1){
-//  SPDR = 0x01;
-// }
-// else if(mode == 2){
-//  SPDR = 0x03;
-// }
-// else{
-//  SPDR = 0x0F;		// displays 4 LEDs
-// }
-// 
-//  
-// while(bit_is_clear(SPSR,SPIF)) {}		// wait till data sent out (while spin loop)
-// encoder = SPDR;				// collecting input from encoders
-// PORTB |=  0x01;				// strobe HC595 output data reg - rising edge
-// PORTB &=  ~0x01;				// falling edge
-// PORTE |= (1<<PE5);				// setting CLK INH back to high
-
 }
 
 int main(){
 // initialize
- segButtonInit();			// initialize the external pushButtons and 7-seg
+ segButtonInit();			// (must be in, why?)initialize the external pushButtons and 7-seg
  tcnt0_init();				// initialize counter timer zero
- spi_init();				// initialize SPI port
- encoder_init();
  sei();					// enable interrupts before entering loop
 
  while(1){
- segButtonInputSet();
- buttonSense();				// sets switch_count. Based on button press
+// buttonSense();				// sets switch_count. Based on button press
  position(switch_count);               	// saves one, ten, hundred, thousand of switch_count. 
  segButtonOutputSet();			// switches from push buttons to display
-
 
 // this section handles the 7-seg displaying segments
  PORTB &= (0<<PB6)|(0<<PB5)|(0<<PB4);//0x00;	// setting digit position 
  LEDSegment(one);				// settings segments based on digit position
-// _delay_ms(1);					// without delay -> ghosting
  _delay_us(300);					// without delay -> ghosting
  PORTA = 0xFF;			 		// eliminates all ghosting
 
@@ -272,7 +189,6 @@ int main(){
  else{
   LEDSegment(ten);
  }
-// _delay_ms(1);
  _delay_us(300);					// without delay -> ghosting
  PORTA = 0xFF;			
 
@@ -283,7 +199,6 @@ int main(){
  else{
   LEDSegment(hundred);
  }
-// _delay_ms(1);
  _delay_us(300);					// without delay -> ghosting
  PORTA = 0xFF;			 
 
@@ -294,7 +209,6 @@ int main(){
  else{
   LEDSegment(thousand);
  }
-// _delay_ms(1); 
  _delay_us(300);					// without delay -> ghosting
  PORTA = 0xFF;			 	
   
