@@ -15,7 +15,7 @@ uint8_t encoderDir = 0;
 /*
 for the 7-seg
 */
-volatile int16_t switch_count = 0;
+volatile int16_t switch_count = 9;
 int one = 0, ten = 0, hundred = 0, thousand = 0;
 
 /************************************************************************
@@ -162,9 +162,9 @@ void spi_init(void){
  }//spi_init
 
 void tcnt0_init(void){
-  //ASSR   |=  (1<<AS0);//ext osc TOSC
+  ASSR   |=  (1<<AS0);//ext osc TOSC
   TIMSK  |=  (1<<TOIE0);//enable timer/counter0 overflow interrupt
-  TCCR0  |=  (1<<CS02)|(1<<CS00);//normal mode, prescale by 128
+  TCCR0  |=  (1<<CS00);//normal mode, no prescale
 }
 
 void encoder_init(){
@@ -174,63 +174,71 @@ void encoder_init(){
 }
 
 ISR(TIMER0_OVF_vect){
- segButtonInputSet();			// change PORTA to read buttons
-  if(debounceSwitch(PINA, 0)){
-   if(mode == 2){			// if you're already incrementing by 2
-    mode = 1;				// change to increment by 1
-   }
-    else if(mode == 4){		// if you're incrementing by 4
-     mode = 0;			// change to increment by 0 
-    }
-   else{ 
-    mode = 2;
-   }
-  }
-  /* the code below changes mode when PINA.1 is pressed
-  */
-  else if(debounceSwitch(PINA,1)){
-   if(mode == 4){
-    mode = 1;
-   }
-   else if(mode == 2){
-     mode = 0;	
-   }
-   else{
-    mode = 4;
-   }
-  }
-/****************************
-get the encoder data ready
-****************************/
-// loading encoder data into shift register
- PORTE |= (1<<PE5);		// sets CLK INH high
- PORTE &= ~(1<<PE6);		// toggle low to high		
- PORTE |= (1<<PE6);		// Strobing SHLD
-//shifting data out to MISO
- PORTE &= ~(1<<PE5);
-
-/*
-Translates from buttonState to LEDs being displayed (mode
-*/
- if(mode == 0){
-  SPDR = 0x00;
- }
- else if(mode == 1){
-  SPDR = 0x01;
- }
- else if(mode == 2){
-  SPDR = 0x03;
- }
- else{
-  SPDR = 0x0F;		// displays 4 LEDs
- }
- 
+  static uint8_t count_7ms = 0;
   
- while(bit_is_clear(SPSR,SPIF)) {}		// wait till data sent out (while spin loop)
- encoder = SPDR;				// collecting input from encoders
- PORTB |=  0x01;				// strobe HC595 output data reg - rising edge
- PORTB &=  ~0x01;				// falling edge
- PORTE |= (1<<PE5);				// setting CLK INH back to high
+  count_7ms++;
+  if((count_7ms %128) == 0){
+    switch_count++;
+  }
+
+
+// segButtonInputSet();			// change PORTA to read buttons
+//  if(debounceSwitch(PINA, 0)){
+//   if(mode == 2){			// if you're already incrementing by 2
+//    mode = 1;				// change to increment by 1
+//   }
+//    else if(mode == 4){		// if you're incrementing by 4
+//     mode = 0;			// change to increment by 0 
+//    }
+//   else{ 
+//    mode = 2;
+//   }
+//  }
+//  /* the code below changes mode when PINA.1 is pressed
+//  */
+//  else if(debounceSwitch(PINA,1)){
+//   if(mode == 4){
+//    mode = 1;
+//   }
+//   else if(mode == 2){
+//     mode = 0;	
+//   }
+//   else{
+//    mode = 4;
+//   }
+//  }
+///****************************
+//get the encoder data ready
+//****************************/
+//// loading encoder data into shift register
+// PORTE |= (1<<PE5);		// sets CLK INH high
+// PORTE &= ~(1<<PE6);		// toggle low to high		
+// PORTE |= (1<<PE6);		// Strobing SHLD
+////shifting data out to MISO
+// PORTE &= ~(1<<PE5);
+//
+///*
+//Translates from buttonState to LEDs being displayed (mode
+//*/
+// if(mode == 0){
+//  SPDR = 0x00;
+// }
+// else if(mode == 1){
+//  SPDR = 0x01;
+// }
+// else if(mode == 2){
+//  SPDR = 0x03;
+// }
+// else{
+//  SPDR = 0x0F;		// displays 4 LEDs
+// }
+// 
+//  
+// while(bit_is_clear(SPSR,SPIF)) {}		// wait till data sent out (while spin loop)
+// encoder = SPDR;				// collecting input from encoders
+// PORTB |=  0x01;				// strobe HC595 output data reg - rising edge
+// PORTB &=  ~0x01;				// falling edge
+// PORTE |= (1<<PE5);				// setting CLK INH back to high
 
 }
 
