@@ -8,8 +8,8 @@
 /*************
 for the 7-seg
 *************/
-//volatile int16_t displaying = 0;
-volatile int16_t displaying = 111;
+volatile int16_t displaying = 0;
+//volatile int16_t displaying = 111;
 
 int one = 0, ten = 0, hundred = 0, thousand = 0;
 
