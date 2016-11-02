@@ -252,7 +252,8 @@ int main(){
 // this section handles the 7-seg displaying segments
  PORTB &= (0<<PB6)|(0<<PB5)|(0<<PB4);//0x00;	// setting digit position 
  LEDSegment(one);				// settings segments based on digit position
- _delay_ms(1);					// without delay -> ghosting
+// _delay_ms(1);					// without delay -> ghosting
+ _delay_us(300);					// without delay -> ghosting
  PORTA = 0xFF;			 		// eliminates all ghosting
 
 //same as above step but for digit3
@@ -263,7 +264,8 @@ int main(){
  else{
   LEDSegment(ten);
  }
- _delay_ms(1);
+// _delay_ms(1);
+ _delay_us(300);					// without delay -> ghosting
  PORTA = 0xFF;			
 
  PORTB =(0<<PB6)|(1<<PB5)|(1<<PB4);// 0x30;
@@ -273,7 +275,8 @@ int main(){
  else{
   LEDSegment(hundred);
  }
- _delay_ms(1);
+// _delay_ms(1);
+ _delay_us(300);					// without delay -> ghosting
  PORTA = 0xFF;			 
 
  PORTB =(1<<PB6)|(0<<PB5)|(0<<PB4);// 0x40;
@@ -283,7 +286,8 @@ int main(){
  else{
   LEDSegment(thousand);
  }
- _delay_ms(1); 
+// _delay_ms(1); 
+ _delay_us(300);					// without delay -> ghosting
  PORTA = 0xFF;			 	
   
 
