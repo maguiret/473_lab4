@@ -15,7 +15,7 @@ uint8_t encoderDir = 0;
 /*
 for the 7-seg
 */
-volatile int16_t switch_count = 8;
+volatile int16_t switch_count = 9;
 int one = 0, ten = 0, hundred = 0, thousand = 0;
 
 /************************************************************************
