@@ -5,12 +5,11 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+
 /*************
 for the 7-seg
 *************/
 volatile int16_t displaying = 0;
-//volatile int16_t displaying = 111;
-
 int one = 0, ten = 0, hundred = 0, thousand = 0;
 
 /**************************************** 
@@ -56,7 +55,7 @@ void LEDSegment(int x){
    extracts the ones, tens ... into individual global variables
 ***************************************************************/
 void position(int16_t x){
-  int value = x;
+  int16_t value = x;
   one = value %10;
   value -= one;
  
@@ -114,18 +113,10 @@ void tcnt0_init(void){
 /*************************************************************************/
 ISR(TIMER0_OVF_vect){
   static uint8_t count_7ms = 0;        			//holds 7ms tick count in binary
-//  static uint8_t display_count = 0x01; 			//holds count for display 
-
   count_7ms++;                				// increment count every 7.8125 ms 
   if ((count_7ms % 128 == 0)){ 				// ?? interrupts equals one half second 
     displaying++;
-//    SPDR = display_count;				// send to display 
-//    while(bit_is_clear(SPSR,SPIF)) {}			// wait till data sent out (while spin loop)
-//    PORTB |=  0x01;					// strobe HC595 output data reg - rising edge
-//    PORTB &=  ~0x01;					// falling edge
-//    display_count = (display_count << 1);		// shift display bit for next time 
   }
-//  if (display_count == 0x00){display_count=0x01;} 	// back to 1st positon
 }
 
 /***********************************************************************/
@@ -133,7 +124,6 @@ ISR(TIMER0_OVF_vect){
 /***********************************************************************/
 int main(){     
   tcnt0_init();  				// initalize counter timer zero
-//  spi_init();    				// initalize SPI port
   sei();         				// enable interrupts before entering loop
   while(1){
     segButtonOutputSet();			// initialized PORTA to output
@@ -142,46 +132,26 @@ int main(){
     // this section handles the 7-seg displaying segments
     PORTB &= (0<<PB6)|(0<<PB5)|(0<<PB4);//0x00; // setting digit position 
     LEDSegment(one);                            // settings segments based on digit position
-//    _delay_us(300);                             // without delay -> ghosting
     _delay_ms(1);                             // without delay -> ghosting
     PORTA = 0xFF;                               // eliminates all ghosting
    
     //same as above step but for digit3
     PORTB = (0<<PB6)|(0<<PB5)|(1<<PB4);//0x10;
-    if(displaying <10){
-     PORTA = 0xFF;
-    }
-    else{
      LEDSegment(ten);
-    }
-//    _delay_us(300);
     _delay_ms(1);                             // without delay -> ghosting
     PORTA = 0xFF;
 
     // displaying hundreds   
     PORTB =(0<<PB6)|(1<<PB5)|(1<<PB4);// 0x30;
-    if(displaying <100){
-     PORTA = 0xFF;
-    }
-    else{
      LEDSegment(hundred);
-    }
-//   _delay_us(300);
     _delay_ms(1);                             // without delay -> ghosting
     PORTA = 0xFF;
     
     //displaying thousands
     PORTB =(1<<PB6)|(0<<PB5)|(0<<PB4);// 0x40;
-    if(displaying <1000){
-     PORTA = 0xFF;
-    }
-    else{
      LEDSegment(thousand);
-    }
-//    _delay_us(300);
     _delay_ms(1);                             // without delay -> ghosting
     PORTA = 0xFF;
    
  }	     		// empty main while loop
-
 } //main

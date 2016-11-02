@@ -1,4 +1,4 @@
-PRG            =lab4
+PRG            =lab3
 
 OBJ            = $(PRG).o
 
