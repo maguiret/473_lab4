@@ -1,2 +1,6 @@
-.lab4.c.swp
-
+*.swp
+*.c
+*.hex
+*.elf
+*.map
+*.o
