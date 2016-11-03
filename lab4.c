@@ -6,8 +6,8 @@
 for the 7-seg
 *************/
 volatile int16_t switch_count = 0;
-int minOne = 0, minTen = 0, hundred = 0, thousand = 0;
-uint8_t colon = 0xFF;
+int minute = 59, hour = 23, minOne = 0, minTen = 0, hOne = 0, hTen = 0;
+uint8_t colon = 0xFF, one = 0, ten = 0;
 
 /************************************************************************
 Just like bit_is_clear() but made it check a variable
@@ -82,18 +82,33 @@ void LEDSegment(int x){
 /***************************************************************
  saves the ones, tens, hundreds, thousands place of switch_count
 ***************************************************************/
-position(uint16_t x){
+uint8_t position0(uint16_t x){
+  int value = x;
+  one = value %10;
+  return one;
+//  value -= one;
+//  
+//  ten = (value %100)/10;
+//  value -= ten;
+//  
+//  hundred = (value %1000)/100;
+//  value -= hundred;
+// 
+//  thousand = (value %10000)/1000;
+}
+uint8_t position1(uint16_t x){
   int value = x;
   one = value %10;
   value -= one;
   
   ten = (value %100)/10;
-  value -= ten;
-  
-  hundred = (value %1000)/100;
-  value -= hundred;
- 
-  thousand = (value %10000)/1000;
+  return ten;
+//  value -= ten;
+//  
+//  hundred = (value %1000)/100;
+//  value -= hundred;
+// 
+//  thousand = (value %10000)/1000;
 }
 
 void segButtonOutputSet(){
@@ -129,6 +144,17 @@ ISR(TIMER0_OVF_vect){
   count_7ms++;
   if((count_7ms %128) == 0){ 		// if one second has passed
     switch_count++;
+    if(switch_count == 60){		// if 60 seconds have passed
+      minute++;
+      switch_count = 0;
+      if(minute == 60){
+        hour++;
+        minute = 0;
+        if(hour == 24){
+          hour = 0;
+        }
+      }
+    }
     colon ^= 0xFF;
   }
 }
@@ -140,24 +166,27 @@ int main(){
   sei();					// enable interrupts before entering loop
 
   while(1){
-  // buttonSense();				// sets switch_count. Based on button press
-    position(switch_count);               	// saves one, ten, hundred, thousand of switch_count. 
+    // saving the hour and minute digits
+    minOne = position0(minute);               	 
+    minTen = position1(minute);
+    hOne = position0(hour);
+    hTen = position1(hour);
     segButtonOutputSet();			// switches from push buttons to display
   
   // this section handles the 7-seg displaying segments
     PORTB &= (0<<PB6)|(0<<PB5)|(0<<PB4);//0x00;	// setting digit position 
-    LEDSegment(one);				// settings segments based on digit position
+    LEDSegment(minOne);				// settings segments based on digit position
     _delay_us(300);					// without delay -> ghosting
     PORTA = 0xFF;			 		// eliminates all ghosting
   
   // displaying tens
     PORTB = (0<<PB6)|(0<<PB5)|(1<<PB4);//0x10;
-    if(switch_count <10){
-      PORTA = 0xFF;
-    }
-    else{
-      LEDSegment(ten);
-    }
+//    if(minute <10){
+//      PORTA = 0xFF;
+//    }
+//    else{
+      LEDSegment(minTen);
+//    }
     _delay_us(300);					// without delay -> ghosting
     PORTA = 0xFF;
   			
@@ -174,21 +203,21 @@ int main(){
   
   //displaying hundreds
     PORTB =(0<<PB6)|(1<<PB5)|(1<<PB4);// 0x30;
-    if(switch_count <100){
-      PORTA = 0xFF;
-    }
-    else{
-      LEDSegment(hundred);
-    }
+//    if(hour <10){
+//      PORTA = 0xFF;
+//    }
+//    else{
+      LEDSegment(hOne);
+//    }
     _delay_us(300);					// without delay -> ghosting
     PORTA = 0xFF;			 
   
     PORTB =(1<<PB6)|(0<<PB5)|(0<<PB4);// 0x40;
-    if(switch_count <1000){
+    if(hour<10){
       PORTA = 0xFF;
     }
     else{
-      LEDSegment(thousand);
+      LEDSegment(hTen);
     }
     _delay_us(300);					// without delay -> ghosting
     PORTA = 0xFF;			 	
