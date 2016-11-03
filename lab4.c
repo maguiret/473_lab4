@@ -6,7 +6,7 @@
 for the 7-seg
 *************/
 volatile int16_t switch_count = 0;
-int one = 0, ten = 0, hundred = 0, thousand = 0;
+int minOne = 0, minTen = 0, hundred = 0, thousand = 0;
 uint8_t colon = 0xFF;
 
 /************************************************************************
