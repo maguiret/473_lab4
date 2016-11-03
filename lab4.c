@@ -12,7 +12,6 @@ global variables
 ***************/
 uint8_t count_7ms = 0;
 
-
 /*************
 for the 7-seg
 *************/
