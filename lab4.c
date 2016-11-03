@@ -2,6 +2,11 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
+/********************************
+Modes the Alarm Clock will be in 
+********************************/
+enum mode{setClk, setAlarm};
+
 /*************
 for the 7-seg
 *************/
@@ -75,7 +80,7 @@ void LEDSegment(int x){
  if(x == 9){
   PORTA = 0x98;
  }
- if(x > 9){    			//error
+ if(x > 9){    			// error indicator
   PORTA = 0x00;
  }
 }
@@ -103,12 +108,6 @@ uint8_t position1(uint16_t x){
   
   ten = (value %100)/10;
   return ten;
-//  value -= ten;
-//  
-//  hundred = (value %1000)/100;
-//  value -= hundred;
-// 
-//  thousand = (value %10000)/1000;
 }
 
 void segButtonOutputSet(){
@@ -124,10 +123,17 @@ void segButtonInit(){
 			 		 //hundred = 0x30 thousand = 0x40
 }
 
+//void tcnt0_init(void){
+//  ASSR   |=  (1<<AS0);			// ext osc TOSC
+//  TIMSK  |=  (1<<TOIE0);		// enable timer/counter0 overflow interrupt
+//  TCCR0  |=  (1<<CS00);			//normal mode, no prescale maybe CTC mode
+//}
 void tcnt0_init(void){
-  ASSR   |=  (1<<AS0);			//ext osc TOSC
-  TIMSK  |=  (1<<TOIE0);		//enable timer/counter0 overflow interrupt
-  TCCR0  |=  (1<<CS00);			//normal mode, no prescale
+  ASSR  |=  (1<<AS0);                //run off external 32khz osc (TOSC)
+  //enable interrupts for output compare match 0
+  TIMSK |= (1<<OCIE0);
+  TCCR0 |=  (1<<WGM01) | (1<<CS00);  //CTC mode, no prescale
+  OCR0  |=  0x07f;                   //compare at 128
 }
 
 /*************************************************************************
@@ -136,13 +142,13 @@ void tcnt0_init(void){
  incremented.  Every 7680 interrupts the minutes counter is incremented.
  tcnt0 interrupts come at 7.8125ms internals.
   1/32768         = 30.517578uS
- (1/32768)*256    = 7.8125ms
+ (1/32768)*128    = 3.90625ms
  (1/32768)*256*128 = 1000mS
 *************************************************************************/
-ISR(TIMER0_OVF_vect){
+ISR(TIMER0_COMP_vect){
   static uint8_t count_7ms = 0;
   count_7ms++;
-  if((count_7ms %128) == 0){ 		// if one second has passed
+  if((count_7ms %256) == 0){ 		// if one second has passed
     switch_count++;
     if(switch_count == 60){		// if 60 seconds have passed
       minute++;
@@ -157,7 +163,37 @@ ISR(TIMER0_OVF_vect){
     }
     colon ^= 0xFF;
   }
+  
 }
+
+/*************************************************************************
+                           timer/counter0 ISR                          
+ When the TCNT0 overflow interrupt occurs, the count_7ms variable is    
+ incremented.  Every 7680 interrupts the minutes counter is incremented.
+ tcnt0 interrupts come at 7.8125ms internals.
+  1/32768         = 30.517578uS
+ (1/32768)*256    = 7.8125ms
+ (1/32768)*256*128 = 1000mS
+*************************************************************************/
+//ISR(TIMER0_OVF_vect){
+//  static uint8_t count_7ms = 0;
+//  count_7ms++;
+//  if((count_7ms %128) == 0){ 		// if one second has passed
+//    switch_count++;
+//    if(switch_count == 60){		// if 60 seconds have passed
+//      minute++;
+//      switch_count = 0;
+//      if(minute == 60){
+//        hour++;
+//        minute = 0;
+//        if(hour == 24){
+//          hour = 0;
+//        }
+//      }
+//    }
+//    colon ^= 0xFF;
+//  }
+//}
 
 int main(){
 // initialize
@@ -187,7 +223,7 @@ int main(){
 //    else{
       LEDSegment(minTen);
 //    }
-    _delay_us(300);					// without delay -> ghosting
+    _delay_us(300);					
     PORTA = 0xFF;
   			
   // displaying colon
@@ -198,7 +234,7 @@ int main(){
     else{
       PORTA = 0xFF;
     }
-    _delay_us(300);					// without delay -> ghosting
+    _delay_us(300);				
     PORTA = 0xFF;			 
   
   //displaying hundreds
@@ -209,7 +245,7 @@ int main(){
 //    else{
       LEDSegment(hOne);
 //    }
-    _delay_us(300);					// without delay -> ghosting
+    _delay_us(300);			
     PORTA = 0xFF;			 
   
     PORTB =(1<<PB6)|(0<<PB5)|(0<<PB4);// 0x40;
@@ -219,7 +255,7 @@ int main(){
     else{
       LEDSegment(hTen);
     }
-    _delay_us(300);					// without delay -> ghosting
+    _delay_us(300);		
     PORTA = 0xFF;			 	
   
   }//while
