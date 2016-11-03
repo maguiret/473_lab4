@@ -155,8 +155,6 @@ void tcnt3_init(void){
  (1/32768)*256*128 = 1000mS
 *************************************************************************/
 ISR(TIMER0_COMP_vect){
-
-PORTC = 0xFF;
   count_7ms++;
   if((count_7ms %256) == 0){ 		// if one second has passed
     switch_count++;
@@ -173,7 +171,6 @@ PORTC = 0xFF;
     }
     colon ^= 0xFF;			// toggling the colon every second
   }
-PORTC ^= 0xFF;
 }
 
 int main(){
@@ -182,9 +179,7 @@ int main(){
 							//  external pushButtons and 7-seg
   tcnt0_init();						// initialize counter timer zero
   sei();						// enable interrupts before entering loop
-
-DDRC = 0xFF;
-
+  
   while(1){
    // saving the hour and minute digits
     minOne = position0(minute);               	 
