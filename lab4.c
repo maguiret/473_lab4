@@ -7,6 +7,12 @@ Modes the Alarm Clock will be in
 ********************************/
 enum mode{setClk, setAlarm};
 
+/***************
+global variables
+***************/
+uint8_t count_7ms = 0;
+
+
 /*************
 for the 7-seg
 *************/
@@ -123,12 +129,15 @@ void segButtonInit(){
 			 		 //hundred = 0x30 thousand = 0x40
 }
 
-//void tcnt0_init(void){
-//  ASSR   |=  (1<<AS0);			// ext osc TOSC
-//  TIMSK  |=  (1<<TOIE0);		// enable timer/counter0 overflow interrupt
-//  TCCR0  |=  (1<<CS00);			//normal mode, no prescale maybe CTC mode
-//}
 void tcnt0_init(void){
+  ASSR  |=  (1<<AS0);                //run off external 32khz osc (TOSC)
+  //enable interrupts for output compare match 0
+  TIMSK |= (1<<OCIE0);
+  TCCR0 |=  (1<<WGM01) | (1<<CS00);  //CTC mode, no prescale
+  OCR0  |=  0x07f;                   //compare at 128
+}
+
+void tcnt3_init(void){
   ASSR  |=  (1<<AS0);                //run off external 32khz osc (TOSC)
   //enable interrupts for output compare match 0
   TIMSK |= (1<<OCIE0);
@@ -138,15 +147,16 @@ void tcnt0_init(void){
 
 /*************************************************************************
                            timer/counter0 ISR                          
- When the TCNT0 overflow interrupt occurs, the count_7ms variable is    
- incremented.  Every 7680 interrupts the minutes counter is incremented.
- tcnt0 interrupts come at 7.8125ms internals.
+ When the TCNT0 compare interrupt occurs, the count_7ms variable is    
+ incremented. 
+ 
   1/32768         = 30.517578uS
  (1/32768)*128    = 3.90625ms
  (1/32768)*256*128 = 1000mS
 *************************************************************************/
 ISR(TIMER0_COMP_vect){
-  static uint8_t count_7ms = 0;
+
+PORTC = 0xFF;
   count_7ms++;
   if((count_7ms %256) == 0){ 		// if one second has passed
     switch_count++;
@@ -161,68 +171,37 @@ ISR(TIMER0_COMP_vect){
         }
       }
     }
-    colon ^= 0xFF;
+    colon ^= 0xFF;			// toggling the colon every second
   }
-  
+PORTC ^= 0xFF;
 }
-
-/*************************************************************************
-                           timer/counter0 ISR                          
- When the TCNT0 overflow interrupt occurs, the count_7ms variable is    
- incremented.  Every 7680 interrupts the minutes counter is incremented.
- tcnt0 interrupts come at 7.8125ms internals.
-  1/32768         = 30.517578uS
- (1/32768)*256    = 7.8125ms
- (1/32768)*256*128 = 1000mS
-*************************************************************************/
-//ISR(TIMER0_OVF_vect){
-//  static uint8_t count_7ms = 0;
-//  count_7ms++;
-//  if((count_7ms %128) == 0){ 		// if one second has passed
-//    switch_count++;
-//    if(switch_count == 60){		// if 60 seconds have passed
-//      minute++;
-//      switch_count = 0;
-//      if(minute == 60){
-//        hour++;
-//        minute = 0;
-//        if(hour == 24){
-//          hour = 0;
-//        }
-//      }
-//    }
-//    colon ^= 0xFF;
-//  }
-//}
 
 int main(){
 // initialize
-  segButtonInit();			// (must be in, why?)initialize the external pushButtons and 7-seg
-  tcnt0_init();				// initialize counter timer zero
-  sei();					// enable interrupts before entering loop
+  segButtonInit();					// (must be in, why?)initialize the
+							//  external pushButtons and 7-seg
+  tcnt0_init();						// initialize counter timer zero
+  sei();						// enable interrupts before entering loop
+
+DDRC = 0xFF;
 
   while(1){
-    // saving the hour and minute digits
+   // saving the hour and minute digits
     minOne = position0(minute);               	 
     minTen = position1(minute);
     hOne = position0(hour);
     hTen = position1(hour);
-    segButtonOutputSet();			// switches from push buttons to display
+    segButtonOutputSet();				// switches from push buttons to display
   
   // this section handles the 7-seg displaying segments
-    PORTB &= (0<<PB6)|(0<<PB5)|(0<<PB4);//0x00;	// setting digit position 
-    LEDSegment(minOne);				// settings segments based on digit position
+    PORTB &= (0<<PB6)|(0<<PB5)|(0<<PB4);//0x00;		// setting digit position 
+    LEDSegment(minOne);					// settings segments based on digit position
     _delay_us(300);					// without delay -> ghosting
     PORTA = 0xFF;			 		// eliminates all ghosting
   
   // displaying tens
     PORTB = (0<<PB6)|(0<<PB5)|(1<<PB4);//0x10;
-//    if(minute <10){
-//      PORTA = 0xFF;
-//    }
-//    else{
       LEDSegment(minTen);
-//    }
     _delay_us(300);					
     PORTA = 0xFF;
   			
