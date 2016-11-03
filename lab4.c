@@ -17,7 +17,7 @@ for the 7-seg
 */
 volatile int16_t switch_count = 9;
 int one = 0, ten = 0, hundred = 0, thousand = 0;
-
+uint8_t colon = 0xFF;
 /************************************************************************
 Just like bit_is_clear() but made it check a variable
 ************************************************************************/
@@ -155,12 +155,23 @@ void tcnt0_init(void){
 }
  
 
+/*************************************************************************
+                           timer/counter0 ISR                          
+ When the TCNT0 overflow interrupt occurs, the count_7ms variable is    
+ incremented.  Every 7680 interrupts the minutes counter is incremented.
+ tcnt0 interrupts come at 7.8125ms internals.
+  1/32768         = 30.517578uS
+ (1/32768)*256    = 7.8125ms
+ (1/32768)*256*128 = 1000mS
+*************************************************************************/
+
 ISR(TIMER0_OVF_vect){
   static uint8_t count_7ms = 0;
   
   count_7ms++;
-  if((count_7ms %128) == 0){
+  if((count_7ms %128) == 0){ 		// if one second has passed
     switch_count++;
+    colon ^= 0xFF;
   }
 }
 
@@ -181,7 +192,7 @@ int main(){
  _delay_us(300);					// without delay -> ghosting
  PORTA = 0xFF;			 		// eliminates all ghosting
 
-//same as above step but for digit3
+// displaying tens
  PORTB = (0<<PB6)|(0<<PB5)|(1<<PB4);//0x10;
  if(switch_count <10){
   PORTA = 0xFF;
@@ -190,8 +201,21 @@ int main(){
   LEDSegment(ten);
  }
  _delay_us(300);					// without delay -> ghosting
- PORTA = 0xFF;			
+ PORTA = 0xFF;
+			
+// displaying colon
+ PORTB =(0<<PB6)|(1<<PB5)|(0<<PB4);// 0x30;
+ if(colon){
+  PORTA = 0xFC; 
+ }
+ else{
+ PORTA = 0xFF;
+ }
+ _delay_us(300);					// without delay -> ghosting
+ PORTA = 0xFF;			 
 
+
+//displaying hundreds
  PORTB =(0<<PB6)|(1<<PB5)|(1<<PB4);// 0x30;
  if(switch_count <100){
   PORTA = 0xFF;
