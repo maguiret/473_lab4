@@ -5,13 +5,12 @@
 /********************************
 Modes the Alarm Clock will be in 
 ********************************/
-enum mode{setClk, setAlarm};
+enum modes{clk, setClk, setAlarm};
 
-/***************
+/*************
 global variables
 ***************/
 uint8_t count_7ms = 0;
-
 
 /*************
 for the 7-seg
@@ -156,6 +155,15 @@ void tcnt3_init(void){
 *************************************************************************/
 ISR(TIMER0_COMP_vect){
   count_7ms++;
+  // determing time positions
+  timeExtract();
+}
+
+/************************************
+ collects the tens and ones place of hour and minutes
+ based on count_7ms
+************************/
+void timeExtract(){
   if((count_7ms %256) == 0){ 		// if one second has passed
     switch_count++;
     if(switch_count == 60){		// if 60 seconds have passed
@@ -171,6 +179,7 @@ ISR(TIMER0_COMP_vect){
     }
     colon ^= 0xFF;			// toggling the colon every second
   }
+  
 }
 
 int main(){
@@ -179,9 +188,31 @@ int main(){
 							//  external pushButtons and 7-seg
   tcnt0_init();						// initialize counter timer zero
   sei();						// enable interrupts before entering loop
-  
+  //set default mode
+  enum modes mode = clk;  
+
   while(1){
-   // saving the hour and minute digits
+    // implements mode
+    switch(mode){
+      case clk:{
+      
+        break;
+      }
+      case setClk:{
+              
+        break;
+      }
+      case setAlarm:{
+      
+        break;
+      }
+    }
+    //  checks buttons
+    if(debounceSwitch(PINA,PB0)){
+      mode = setClk;
+    }
+
+    // saving the hour and minute digits
     minOne = position0(minute);               	 
     minTen = position1(minute);
     hOne = position0(hour);
