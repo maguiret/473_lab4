@@ -2,6 +2,9 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
+
+uint8_t flag = 1;					// to get around the spif check
+
 /******
 for ISR
 *******/
@@ -26,7 +29,7 @@ uint8_t count_7ms = 0;
 for the 7-seg
 *************/
 volatile int16_t switch_count = 0;
-int minute = 59, hour = 23, minOne = 0, minTen = 0, hOne = 0, hTen = 0;
+int minute = 0, hour = 0, minOne = 0, minTen = 0, hOne = 0, hTen = 0;
 uint8_t colon = 0xFF, one = 0, ten = 0;
 
 /************************************************************************
@@ -124,22 +127,24 @@ uint8_t position1(uint16_t x){
   ten = (value %100)/10;
   return ten;
 }
-
+/***************************************************
+ checks encoders and changes hour/minute accordinly
+****************************************************/
 void buttonSense(){
   if(((encoder & (1<<en1A)) == 0) & (prevEncoder == 1)){ // checks for falling edge of
-                                                        // encoder1.A 
-    if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){   // if encoder1.B is different from encoder1.A
-      encoderDir = 1;                                      // encoder1 is turning clockwise
+                                                         // encoder1.A 
+    if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  // if encoder1.B is different from encoder1.A
+      encoderDir = 1;                                    // encoder1 is turning clockwise
     }
     else{
       encoderDir = 0;
     }
 // changing switch_count based on encoder direction
     if(encoderDir == 1){
-      hour += 1;
+      minute += 1;
     }
     else{
-      hour -= 1;
+      minute -= 1;
     }
   }
   prevEncoder = (encoder & (1<<en1A));
@@ -184,7 +189,6 @@ void tcnt3_init(void){
                            timer/counter0 ISR                          
  When the TCNT0 compare interrupt occurs, the count_7ms variable is    
  incremented. 
- 
   1/32768         = 30.517578uS
  (1/32768)*128    = 3.90625ms
  (1/32768)*256*128 = 1000mS
@@ -202,84 +206,26 @@ ISR(TIMER0_COMP_vect){
 void timeExtract(){
   if((count_7ms %256) == 0){ 		// if one second has passed
     switch_count++;
-    if(switch_count == 60){		// if 60 seconds have passed
-      minute++;
-      switch_count = 0;
-      if(minute == 60){
-        hour++;
-        minute = 0;
-        if(hour == 24){
-          hour = 0;
-        }
+  }
+  if(switch_count == 60){		// if 60 seconds have passed
+    minute++;
+    switch_count = 0;
+    if(minute == 60){
+      hour++;
+      minute = 0;
+      if(hour == 24){
+        hour = 0;
       }
     }
-    colon ^= 0xFF;			// toggling the colon every second
   }
+    colon ^= 0xFF;			// toggling the colon every second
   
 }
 
-int main(){
-// initialize
-  segButtonInit();					// (must be in, why?)initialize the
-							//  external pushButtons and 7-seg
-  tcnt0_init();						// initialize counter timer zero
-  sei();						// enable interrupts before entering loop
-  //set default mode
-  enum modes mode = clk;  
-
-  while(1){
-    // implements mode
-    switch(mode){
-      case clk:{
-      
-        break;
-      }
-      case setClk:{
-        segButtonInputSet();
-        while(!(debounceSwitch(PINA, 0))){
-          /****************************
-          get the encoder data ready
-          ****************************/
-          // loading encoder data into shift register
-           PORTE |= (1<<PE5);             // sets CLK INH high
-           PORTE &= ~(1<<PE6);            // toggle low to high           
-           PORTE |= (1<<PE6);             // Strobing SHLD
-          //shifting data out to MISO
-           PORTE &= ~(1<<PE5);
-          
-          /*
-          Translates from buttonState to LEDs being displayed (mode
-          */
-          SPDR = 0x00;		// garbage data
-          
-          _delay_ms(10);          
-//          while(bit_is_clear(SPSR,SPIF)) {}              // wait till data sent out (while spin loop)
-          encoder = SPDR;                                // collecting input from encoders
-          PORTE |= (1<<PE5);                             // setting CLK INH back to high
-          buttonSense();  
-        }
-        segButtonOutputSet();
-        mode = clk;        
-        break;
-      }
-      case setAlarm:{
-      
-        break;
-      }
-    }
-    //  checks buttons
-    segButtonInputSet();
-    if(debounceSwitch(PINA,0)){
-      mode = setClk;
-    }
-    segButtonOutputSet();
-    // saving the hour and minute digits
-    minOne = position0(minute);               	 
-    minTen = position1(minute);
-    hOne = position0(hour);
-    hTen = position1(hour);
-    segButtonOutputSet();				// switches from push buttons to display
-  
+/******************************************************
+ This function displays each digit's value on the 7-seg
+*******************************************************/
+segmentDisplay(){
   // this section handles the 7-seg displaying segments
     PORTB &= (0<<PB6)|(0<<PB5)|(0<<PB4);//0x00;		// setting digit position 
     LEDSegment(minOne);					// settings segments based on digit position
@@ -323,7 +269,76 @@ int main(){
     }
     _delay_us(300);		
     PORTA = 0xFF;			 	
+}
+
+/*******************************
+Initialize Spi
+********************************/
+void spi_init(void){
+  DDRB  |=   0x07;//Turn on SS, MOSI, SCLK
+  SPCR  |=   (1<<SPE)|(1<<MSTR);//set up SPI mode
+  SPSR  |=   (1<<SPI2X);// double speed operation
+ }//spi_init
+ 
+
+int main(){
+  // initialize
+  segButtonInit();					// (must be in, why?)initialize the
+							//  external pushButtons and 7-seg
+  spi_init();
+  tcnt0_init();						// initialize counter timer zero
+  sei();						// enable interrupts before entering loop
+  //set default mode
+  enum modes mode = clk;  
+
+  while(1){
+    // implements mode
+    switch(mode){
+      case clk:{
+      
+        break;
+      }
+      case setClk:{
+        segButtonInputSet();
+        while(!(debounceSwitch(PINA, 0))){
+          // loading encoder data into shift register
+          PORTE |= (1<<PE5);             // sets CLK INH high
+          PORTE &= ~(1<<PE6);            // toggle SHLD low to high           
+          PORTE |= (1<<PE6);             
+          //shifting data out to MISO
+          PORTE &= ~(1<<PE5);
+          SPDR = 0x00;		// garbage data
+          while(bit_is_clear(SPSR,SPIF)) {}              // wait till data sent out 
+          encoder = SPDR;                                  // collecting input from encoders
+          PORTE |= (1<<PE5);                               // setting CLK INH back to high
+//          if(debounceSwitch(encoder, 0)){
+            buttonSense(); 
+            timeExtract(); 
+//          }
+        }
+        segButtonOutputSet();
+        mode = clk;        
+        break;
+      }
+      case setAlarm:{
+      
+        break;
+      }
+    }
+    //  checks buttons
+    segButtonInputSet();
+    if(debounceSwitch(PINA,0)){
+      mode = setClk;
+    }
+    segButtonOutputSet();
+    // saving the hour and minute digits
+    minOne = position0(minute);               	 
+    minTen = position1(minute);
+    hOne = position0(hour);
+    hTen = position1(hour);
+    segButtonOutputSet();				// switches from push buttons to display
   
+    segmentDisplay(); 					// displaying the 7-seg
   }//while
 
 }//main
