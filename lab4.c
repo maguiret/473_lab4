@@ -2,6 +2,16 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
+/******
+for ISR
+*******/
+#define en1A 0
+#define en1B 1
+//uint8_t mode = 1;               // holds value being incremented/decremented
+uint8_t encoder = 0;
+uint8_t prevEncoder = 1;
+uint8_t encoderDir = 0;
+
 /********************************
 Modes the Alarm Clock will be in 
 ********************************/
@@ -115,10 +125,36 @@ uint8_t position1(uint16_t x){
   return ten;
 }
 
+void buttonSense(){
+  if(((encoder & (1<<en1A)) == 0) & (prevEncoder == 1)){ // checks for falling edge of
+                                                        // encoder1.A 
+    if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){   // if encoder1.B is different from encoder1.A
+      encoderDir = 1;                                      // encoder1 is turning clockwise
+    }
+    else{
+      encoderDir = 0;
+    }
+// changing switch_count based on encoder direction
+    if(encoderDir == 1){
+      hour += 1;
+    }
+    else{
+      hour -= 1;
+    }
+  }
+  prevEncoder = (encoder & (1<<en1A));
+}
+
 void segButtonOutputSet(){
   DDRA = 0xFF;                           // segments on/pushbuttons off
   PORTA = 0xFF;                          // set segments to default off
   _delay_ms(1);
+}
+void segButtonInputSet(){
+ PORTB = 0x70;                          // tristate buffer for pushbuttons enabled
+ DDRA = 0x00;                           // PORTA set as input
+ PORTA = 0xFF;                          // PORTA as pullups
+ _delay_ms(1);
 }
 
 void segButtonInit(){
@@ -199,7 +235,31 @@ int main(){
         break;
       }
       case setClk:{
-              
+        segButtonInputSet();
+        while(!(debounceSwitch(PINA, 0))){
+          /****************************
+          get the encoder data ready
+          ****************************/
+          // loading encoder data into shift register
+           PORTE |= (1<<PE5);             // sets CLK INH high
+           PORTE &= ~(1<<PE6);            // toggle low to high           
+           PORTE |= (1<<PE6);             // Strobing SHLD
+          //shifting data out to MISO
+           PORTE &= ~(1<<PE5);
+          
+          /*
+          Translates from buttonState to LEDs being displayed (mode
+          */
+          SPDR = 0x00;		// garbage data
+          
+          _delay_ms(10);          
+//          while(bit_is_clear(SPSR,SPIF)) {}              // wait till data sent out (while spin loop)
+          encoder = SPDR;                                // collecting input from encoders
+          PORTE |= (1<<PE5);                             // setting CLK INH back to high
+          buttonSense();  
+        }
+        segButtonOutputSet();
+        mode = clk;        
         break;
       }
       case setAlarm:{
@@ -208,10 +268,11 @@ int main(){
       }
     }
     //  checks buttons
-    if(debounceSwitch(PINA,PB0)){
+    segButtonInputSet();
+    if(debounceSwitch(PINA,0)){
       mode = setClk;
     }
-
+    segButtonOutputSet();
     // saving the hour and minute digits
     minOne = position0(minute);               	 
     minTen = position1(minute);
