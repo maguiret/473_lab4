@@ -304,9 +304,9 @@ int main(){
       
         break;
       }
-//      case setClk:{
-//        segButtonInputSet();
-//        while(!(debounceSwitch(PINA, 0))){
+      case setClk:{
+        segButtonInputSet();
+        while(!(debounceSwitch(PINA, 0))){
 //          // loading encoder data into shift register
 //          PORTE |= (1<<PE5);             // sets CLK INH high
 //          PORTE &= ~(1<<PE6);            // toggle SHLD low to high           
@@ -321,24 +321,22 @@ int main(){
 //            buttonSense(); 
 //            timeExtract(); 
 //          }
-//        }
-//        segButtonOutputSet();
-//        mode = clk;        
-//        break;
-//      }
+        }
+        segButtonOutputSet();
+        mode = clk;        
+        break;
+      }
 //      case setAlarm:{
 //      
 //        break;
 //      }
     }
     //  checks buttons
-//    segButtonInputSet();
-//    if(debounceSwitch(PINA,0)){
-//      mode = setClk;
-//    }
-//    if(debounceSwitch(PINA,1)){
-//      mode = setAlarm;
-//    }
+    segButtonInputSet();
+    if(debounceSwitch(PINA,0)){
+      mode = setClk;
+    }
+    segButtonOutputSet();
   }//while
 
 }//main
