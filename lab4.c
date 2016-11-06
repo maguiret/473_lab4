@@ -7,9 +7,12 @@ for ISR
 *******/
 #define en1A 0
 #define en1B 1
+#define en2A 2
+#define en2B 3
 //uint8_t mode = 1;               // holds value being incremented/decremented
 uint8_t encoder = 0;
-uint8_t prevEncoder = 1;
+uint8_t prevEncoder0 = 1;
+uint8_t prevEncoder1 = 1;
 
 /********************************
 Modes the Alarm Clock will be in 
@@ -127,7 +130,7 @@ uint8_t position1(uint16_t x){
  checks encoders and changes hour/minute accordinly
 ****************************************************/
 void buttonSense(){
-  if(((encoder & (1<<en1A)) == 0) & (prevEncoder == 1)){ // checks for falling edge of
+  if(((encoder & (1<<en1A)) == 0) & (prevEncoder0 == 1)){ // checks for falling edge of
                                                          // encoder1.A 
     if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  // if encoder1.B is different from encoder1.A
       //increase;                                    // encoder1 is turning clockwise
@@ -136,7 +139,7 @@ void buttonSense(){
       //decrease
     }
   }
-  prevEncoder = (encoder & (1<<en1A));
+  prevEncoder0 = (encoder & (1<<en1A));
 }
 
 void segButtonOutputSet(){
@@ -174,20 +177,6 @@ void tcnt3_init(void){
   OCR0  |=  0x07f;                   //compare at 128
 }
 
-/*************************************************************************
-                           timer/counter0 ISR                          
- When the TCNT0 compare interrupt occurs, the count_7ms variable is    
- incremented. 
-  1/32768         = 30.517578uS
- (1/32768)*128    = 3.90625ms
- (1/32768)*256*128 = 1000mS
-*************************************************************************/
-ISR(TIMER0_COMP_vect){
-  count_7ms++;
-  // determing time positions
-  timeExtract();
-}
-
 /************************************
  collects the tens and ones place of hour and minutes
  based on count_7ms
@@ -212,10 +201,25 @@ void timeExtract(){
   
 }
 
+/*************************************************************************
+                           timer/counter0 ISR                          
+ When the TCNT0 compare interrupt occurs, the count_7ms variable is    
+ incremented. 
+  1/32768         = 30.517578uS
+ (1/32768)*128    = 3.90625ms
+ (1/32768)*256*128 = 1000mS
+*************************************************************************/
+ISR(TIMER0_COMP_vect){
+  count_7ms++;
+  // determing time positions
+  timeExtract();
+}
+
+
 /******************************************************
  This function displays each digit's value on the 7-seg
 *******************************************************/
-segmentDisplay(){
+void segmentDisplay(){
   // this section handles the 7-seg displaying segments
     PORTB &= (0<<PB6)|(0<<PB5)|(0<<PB4);//0x00;		// setting digit position 
     LEDSegment(minOne);					// settings segments based on digit position
@@ -317,17 +321,34 @@ int main(){
           while(bit_is_clear(SPSR,SPIF)) {}              // wait till data sent out 
           encoder = SPDR;                                  // collecting input from encoders
           PORTE |= (1<<PE5);                               // setting CLK INH back to high
-///////////////////////
-          if(((encoder & (1<<en1A)) == 0) & (prevEncoder == 1)){ // checks for falling edge of
+          if(((encoder & (1<<en1A)) == 0) & (prevEncoder0 == 1)){ // checks for falling edge of
                                                                  // encoder1.A 
             if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  // if encoder1.B is different from encoder1.A, clockwise
-              hour++;
+              hour++;//minute++;
             }
             else{
-              hour--;
+              hour--;//minute--;
             }
           }
-          prevEncoder = (encoder & (1<<en1A));
+          prevEncoder0 = (encoder & (1<<en1A));
+
+
+
+
+          if(minute == 60){
+            hour++;
+            minute = 0;
+          }
+          else if (minute == -1){
+           hour--;
+           minute = 59; 
+          }
+          if(hour == 24){
+              hour = 0;
+          }
+          else if(hour == -1){
+            hour = 23;
+          }
           minOne = position0(minute);               	 
           minTen = position1(minute);
           hOne = position0(hour);
