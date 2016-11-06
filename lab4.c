@@ -324,16 +324,24 @@ int main(){
           if(((encoder & (1<<en1A)) == 0) & (prevEncoder0 == 1)){ // checks for falling edge of
                                                                  // encoder1.A 
             if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  // if encoder1.B is different from encoder1.A, clockwise
-              hour++;//minute++;
+              minute++;
             }
             else{
-              hour--;//minute--;
+              minute--;
             }
           }
           prevEncoder0 = (encoder & (1<<en1A));
 
-
-
+//          if(((encoder & (1<<en2A)) == 0) & (prevEncoder1 == 1)){ // checks for falling edge of
+//                                                                 // encoder1.A 
+//            if((encoder & (1<<en2A)) != (encoder & (1<<en2B))){  // if encoder1.B is different from encoder1.A, clockwise
+//              hour++;
+//            }
+//            else{
+//              hour--;
+//            }
+//          }
+//          prevEncoder1 = (encoder & (1<<en2A));
 
           if(minute == 60){
             hour++;
@@ -361,15 +369,18 @@ int main(){
         mode = clk;        
         break;
       }
-//      case setAlarm:{
-//      
-//        break;
-//      }
+      case setAlarm:{
+      
+        break;
+      }
     }
     //  checks buttons
     segButtonInputSet();
     if(debounceSwitch(PINA,0)){
       mode = setClk;
+    }
+    else if(debounceSwitch(PINA,1)){
+      mode = setAlarm;
     }
     segButtonOutputSet();
   }//while
