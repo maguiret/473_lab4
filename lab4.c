@@ -9,7 +9,7 @@ for ISR
 #define en1B 1
 //uint8_t mode = 1;               // holds value being incremented/decremented
 uint8_t encoder = 0;
-uint8_t prevEncoder = 1;
+uint8_t prevEncoder = 5;
 uint8_t encoderDir = 0;
 
 /********************************
@@ -306,20 +306,56 @@ int main(){
       }
       case setClk:{
         segButtonInputSet();
-        while(!(debounceSwitch(PINA, 0))){
-//          // loading encoder data into shift register
-//          PORTE |= (1<<PE5);             // sets CLK INH high
-//          PORTE &= ~(1<<PE6);            // toggle SHLD low to high           
-//          PORTE |= (1<<PE6);             
-//          //shifting data out to MISO
-//          PORTE &= ~(1<<PE5);
-//          SPDR = 0x00;		// garbage data
-//          while(bit_is_clear(SPSR,SPIF)) {}              // wait till data sent out 
-//          encoder = SPDR;                                  // collecting input from encoders
-//          PORTE |= (1<<PE5);                               // setting CLK INH back to high
+        while(!(debounceSwitch(PINA, 0))){ 		// user confirmation may change to button 7
+          // loading encoder data into shift register
+          PORTE |= (1<<PE5);             // sets CLK INH high
+          PORTE &= ~(1<<PE6);            // toggle SHLD low to high           
+          PORTE |= (1<<PE6);             
+          //shifting data out to MISO
+          PORTE &= ~(1<<PE5);
+          SPDR = 0x00;		// garbage data
+          while(bit_is_clear(SPSR,SPIF)) {}              // wait till data sent out 
+          encoder = SPDR;                                  // collecting input from encoders
+          PORTE |= (1<<PE5);                               // setting CLK INH back to high
 //          if(debounceSwitch(encoder, 0)){
-//            buttonSense(); 
-//            timeExtract(); 
+///////////////////////////////////////////////////////////////////////////////////////
+
+          if(((encoder & (1<<en1A)) == 0) & (prevEncoder == 1)){ // checks for falling edge of
+                                                                 // encoder1.A 
+//            if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  // if encoder1.B is different from encoder1.A
+//              encoderDir = 1;                                    // encoder1 is turning clockwise
+//            }
+//            else{
+//              encoderDir = 0;
+//            }
+      // changing switch_count based on encoder direction
+//            if(encoderDir == 1){
+            hour++;//minute++;
+//            }
+//            else{
+//              minute--;
+//            }
+          }
+          prevEncoder = (encoder & (1<<en1A));
+ 
+
+/////////////////////////////////////////////////////////////////
+//          if((count_7ms %32) == 0){             // for debugging. REMOVE on final
+//              switch_count++;
+//              colon ^= 0xFF;                      // toggling the colon every second
+//            }
+            if(switch_count == 60){               // if 60 seconds have passed
+              minute++;
+              switch_count = 0;
+              if(minute == 60){
+                hour++;
+                minute = 0;
+                if(hour == 24){
+                  hour = 0;
+                }
+              }
+            }
+ 
 //          }
         }
         segButtonOutputSet();
