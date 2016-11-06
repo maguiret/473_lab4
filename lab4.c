@@ -9,8 +9,7 @@ for ISR
 #define en1B 1
 //uint8_t mode = 1;               // holds value being incremented/decremented
 uint8_t encoder = 0;
-uint8_t prevEncoder = 5;
-uint8_t encoderDir = 0;
+uint8_t prevEncoder = 1;
 
 /********************************
 Modes the Alarm Clock will be in 
@@ -131,17 +130,10 @@ void buttonSense(){
   if(((encoder & (1<<en1A)) == 0) & (prevEncoder == 1)){ // checks for falling edge of
                                                          // encoder1.A 
     if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  // if encoder1.B is different from encoder1.A
-      encoderDir = 1;                                    // encoder1 is turning clockwise
+      //increase;                                    // encoder1 is turning clockwise
     }
     else{
-      encoderDir = 0;
-    }
-// changing switch_count based on encoder direction
-    if(encoderDir == 1){
-      minute += 1;
-    }
-    else{
-      minute -= 1;
+      //decrease
     }
   }
   prevEncoder = (encoder & (1<<en1A));
@@ -309,6 +301,10 @@ int main(){
         break;
       }
       case setClk:{
+          DDRC = 0xFF;
+          PORTC = 0x00;
+          DDRD = 0x00;
+          PORTD = 0xFF;
         segButtonInputSet();
         while(!(debounceSwitch(PINA, 0))){ 		// user confirmation may change to button 7
           // loading encoder data into shift register
@@ -321,56 +317,24 @@ int main(){
           while(bit_is_clear(SPSR,SPIF)) {}              // wait till data sent out 
           encoder = SPDR;                                  // collecting input from encoders
           PORTE |= (1<<PE5);                               // setting CLK INH back to high
-//          if(debounceSwitch(encoder, 0)){
-///////////////////////////////////////////////////////////////////////////////////////
-          DDRC = 0xFF;
-          DDRD = 0x00;
-          PORTD = 0xFF;
-          PORTC = 0x00;
-         
-          if((encoder & (1<<0)) == 0){ // checks for 1 at 0
-//          if((encoder & (1<<0))){ // checks for 0 at 0 
-            PORTC = 0xFF;
-            while(PIND == 0xFF){}
-          }
-
-//            if(((encoder & (1<<en1A)) == 0) & (prevEncoder == 1)){ // checks for falling edge of
+///////////////////////
+          if(((encoder & (1<<en1A)) == 0) & (prevEncoder == 1)){ // checks for falling edge of
                                                                  // encoder1.A 
-//            if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  // if encoder1.B is different from encoder1.A
-//              encoderDir = 1;                                    // encoder1 is turning clockwise
-//            }
-//            else{
-//              encoderDir = 0;
-//            }
-      // changing switch_count based on encoder direction
-//            if(encoderDir == 1){
-//            hour++;//minute++;
-//            }
-//            else{
-//              minute--;
-//            }
-//          }
-          prevEncoder = (encoder & (1<<en1A));
- 
-
-/////////////////////////////////////////////////////////////////
-//          if((count_7ms %32) == 0){             // for debugging. REMOVE on final
-//              switch_count++;
-//              colon ^= 0xFF;                      // toggling the colon every second
-//            }
-            if(switch_count == 60){               // if 60 seconds have passed
-              minute++;
-              switch_count = 0;
-              if(minute == 60){
-                hour++;
-                minute = 0;
-                if(hour == 24){
-                  hour = 0;
-                }
-              }
+            if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  // if encoder1.B is different from encoder1.A, clockwise
+              hour++;
             }
- 
-//          }
+            else{
+              hour--;
+            }
+          }
+          prevEncoder = (encoder & (1<<en1A));
+          minOne = position0(minute);               	 
+          minTen = position1(minute);
+          hOne = position0(hour);
+          hTen = position1(hour);
+          segButtonOutputSet();				// switches from push buttons to display
+          segmentDisplay();				// displaying the 7-seg
+          segButtonInputSet();
         }
         segButtonOutputSet();
         mode = clk;        
