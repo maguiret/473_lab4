@@ -277,7 +277,10 @@ void spi_init(void){
   SPCR  |=   (1<<SPE)|(1<<MSTR);//set up SPI mode
   SPSR  |=   (1<<SPI2X);// double speed operation
  }//spi_init
- 
+
+void encoder_init(){
+  DDRE = 0xFF;
+} 
 
 int main(){
   // initialize
@@ -285,6 +288,7 @@ int main(){
 							//  external pushButtons and 7-seg
   spi_init();
   tcnt0_init();						// initialize counter timer zero
+  encoder_init();
   sei();						// enable interrupts before entering loop
   //set default mode
   enum modes mode = clk;  
@@ -319,8 +323,18 @@ int main(){
           PORTE |= (1<<PE5);                               // setting CLK INH back to high
 //          if(debounceSwitch(encoder, 0)){
 ///////////////////////////////////////////////////////////////////////////////////////
+          DDRC = 0xFF;
+          DDRD = 0x00;
+          PORTD = 0xFF;
+          PORTC = 0x00;
+         
+          if((encoder & (1<<0)) == 0){ // checks for 1 at 0
+//          if((encoder & (1<<0))){ // checks for 0 at 0 
+            PORTC = 0xFF;
+            while(PIND == 0xFF){}
+          }
 
-          if(((encoder & (1<<en1A)) == 0) & (prevEncoder == 1)){ // checks for falling edge of
+//            if(((encoder & (1<<en1A)) == 0) & (prevEncoder == 1)){ // checks for falling edge of
                                                                  // encoder1.A 
 //            if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  // if encoder1.B is different from encoder1.A
 //              encoderDir = 1;                                    // encoder1 is turning clockwise
@@ -330,12 +344,12 @@ int main(){
 //            }
       // changing switch_count based on encoder direction
 //            if(encoderDir == 1){
-            hour++;//minute++;
+//            hour++;//minute++;
 //            }
 //            else{
 //              minute--;
 //            }
-          }
+//          }
           prevEncoder = (encoder & (1<<en1A));
  
 
