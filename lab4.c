@@ -16,8 +16,13 @@ uint8_t prevEncoder1 = 1;
 /************************
   for brightness of 7-seg
 *************************/
-#define bright 0x0f
+#define bright 0x90
 
+/************************
+ for alarm 
+*************************/
+
+#define freq 10096		// between 62000 and 10096
 /********************************
 Modes the Alarm Clock will be in 
 ********************************/
@@ -174,9 +179,20 @@ void tcnt0_init(void){
 
 void tcnt2_init(void){
   // fast PWM, no prescale, inverting mode
-  TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<CS20)|(1<<COM21)|(1<<COM20);
+//  TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<CS20)|(1<<COM21)|(1<<COM20);
+    TCCR2 =  (1<<WGM21) | (1<<WGM20) | (1<<COM21) | (1<<COM20) | (1<<CS20) | (1<<CS21);
   OCR2 = bright;		//compare @ 123
 }
+
+void tcnt1_init(void){
+  TCCR1A |= (1<<COM1A0);
+  TCCR1B |= (1<<WGM12)|(1<<CS10);
+  TCCR1C = 0x00;
+  TCNT1  = 0;
+  OCR1A  = freq;
+}
+
+
 
 /************************************
  collects the tens and ones place of hour and minutes
@@ -270,7 +286,7 @@ void segmentDisplay(){
 Initialize Spi
 ********************************/
 void spi_init(void){
-  DDRB  |=   0x87;//Turn on SS, MOSI, SCLK, pwm for 7-seg 
+  DDRB  |=   (0x07)|(1<<PB7)|(1<<PB5);//Turn on SS, MOSI, SCLK, pwm for 7-seg 
   SPCR  |=   (1<<SPE)|(1<<MSTR);//set up SPI mode
   SPSR  |=   (1<<SPI2X);// double speed operation
  }//spi_init
@@ -284,6 +300,7 @@ int main(){
   segButtonInit();					// (must be in, why?)initialize the
 							//  external pushButtons and 7-seg
   tcnt2_init();
+  tcnt1_init();
   spi_init();
   tcnt0_init();						// initialize counter timer zero
   encoder_init();
