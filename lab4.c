@@ -9,6 +9,8 @@ for ISR
 #define en1B 1
 #define en2A 2
 #define en2B 3
+
+#define bright 0xff
 //uint8_t mode = 1;               // holds value being incremented/decremented
 uint8_t encoder = 0;
 uint8_t prevEncoder0 = 1;
@@ -163,18 +165,15 @@ void segButtonInit(){
 
 void tcnt0_init(void){
   ASSR  |=  (1<<AS0);                //run off external 32khz osc (TOSC)
-  //enable interrupts for output compare match 0
-  TIMSK |= (1<<OCIE0);
+  TIMSK |= (1<<OCIE0);		     //enable interrupts for output compare match 0
   TCCR0 |=  (1<<WGM01) | (1<<CS00);  //CTC mode, no prescale
   OCR0  |=  0x07f;                   //compare at 128
 }
 
-void tcnt3_init(void){
-  ASSR  |=  (1<<AS0);                //run off external 32khz osc (TOSC)
-  //enable interrupts for output compare match 0
-  TIMSK |= (1<<OCIE0);
-  TCCR0 |=  (1<<WGM01) | (1<<CS00);  //CTC mode, no prescale
-  OCR0  |=  0x07f;                   //compare at 128
+void tcnt2_init(void){
+  // fast PWM, no prescale, inverting mode
+  TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<CS20)|(1<<COM21)|(1<<COM20);
+  OCR2 = bright;		//compare @ 123
 }
 
 /************************************
@@ -282,6 +281,7 @@ int main(){
   // initialize
   segButtonInit();					// (must be in, why?)initialize the
 							//  external pushButtons and 7-seg
+  tcnt2_init();
   spi_init();
   tcnt0_init();						// initialize counter timer zero
   encoder_init();
