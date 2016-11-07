@@ -23,6 +23,7 @@ uint8_t prevEncoder1 = 1;
 *************************/
 
 #define freq 10096		// between 62000 and 10096
+#define volume 0x90
 /********************************
 Modes the Alarm Clock will be in 
 ********************************/
@@ -192,6 +193,16 @@ void tcnt1_init(void){
   OCR1A  = freq;
 }
 
+void tcnt3_init(void){
+ //inverting, fast PWM, 64 prescaler
+  TCCR3A |= (1<<COM3A1)|(1<<COM3A0)|(1<<WGM31)|(1<<WGM30);
+//  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS31)|(1<<CS30);
+  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS30);
+  TCCR3C = 0x00;
+  TCNT3  = 0;
+  OCR3A  = volume;
+}
+
 
 
 /************************************
@@ -299,10 +310,11 @@ int main(){
   // initialize
   segButtonInit();					// (must be in, why?)initialize the
 							//  external pushButtons and 7-seg
+  tcnt3_init();
   tcnt2_init();
   tcnt1_init();
-  spi_init();
   tcnt0_init();						// initialize counter timer zero
+  spi_init();
   encoder_init();
   sei();						// enable interrupts before entering loop
   //set default mode
