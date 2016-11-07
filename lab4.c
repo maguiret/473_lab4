@@ -166,7 +166,7 @@ void segButtonInputSet(){
 
 void segButtonInit(){
   DDRA = 0xFF; 		 		 // segments on/pushbuttons off
-  DDRF = 0xF0;		 		 // pin 4-7 on portb set to output
+  DDRF = 0x70;		 		 // pin 4-7 on portb set to output
   PORTF = 0x00;		 		 // digit 4. one = 0x00 ten = 0x10 
 			 		 //hundred = 0x30 thousand = 0x40
 }
@@ -261,19 +261,19 @@ ISR(TIMER0_COMP_vect){
 *******************************************************/
 void segmentDisplay(){
   // this section handles the 7-seg displaying segments
-    PORTF &= (0<<PB6)|(0<<PB5)|(0<<PB4);//0x00;		// setting digit position 
+    PORTF &= (0<<PF6)|(0<<PF5)|(0<<PF4);//0x00;		// setting digit position 
     LEDSegment(minOne);					// settings segments based on digit position
     _delay_us(300);					// without delay -> ghosting
     PORTA = 0xFF;			 		// eliminates all ghosting
   
   // displaying tens
-    PORTF = (0<<PB6)|(0<<PB5)|(1<<PB4);//0x10;
+    PORTF = (0<<PF6)|(0<<PF5)|(1<<PF4);//0x10;
       LEDSegment(minTen);
     _delay_us(300);					
     PORTA = 0xFF;
   			
   // displaying colon
-    PORTF =(0<<PB6)|(1<<PB5)|(0<<PB4);// 0x30;
+    PORTF =(0<<PF6)|(1<<PF5)|(0<<PF4);// 0x30;
     if(colon){
       PORTA = 0xFC; 
     }
@@ -284,7 +284,7 @@ void segmentDisplay(){
     PORTA = 0xFF;			 
   
   //displaying hundreds
-    PORTF =(0<<PB6)|(1<<PB5)|(1<<PB4);// 0x30;
+    PORTF =(0<<PF6)|(1<<PF5)|(1<<PF4);// 0x30;
 //    if(hour <10){
 //      PORTA = 0xFF;
 //    }
@@ -294,7 +294,7 @@ void segmentDisplay(){
     _delay_us(300);			
     PORTA = 0xFF;			 
   
-    PORTF =(1<<PB6)|(0<<PB5)|(0<<PB4);// 0x40;
+    PORTF =(1<<PF6)|(0<<PF5)|(0<<PF4);// 0x40;
     if(hour<10){
       PORTA = 0xFF;
     }
@@ -309,7 +309,7 @@ void segmentDisplay(){
 Initialize Spi
 ********************************/
 void spi_init(void){
-  DDRB  |=   (0x07)|(1<<PB7)|(1<<PB5);//Turn on SS, MOSI, SCLK, pwm for 7-seg 
+  DDRB  |=   (0x07)|(1<<PB7)|(1<<PB5);//Turn on SS, MOSI, SCLK, pwm for 7-seg, volume for alarm
   SPCR  |=   (1<<SPE)|(1<<MSTR);//set up SPI mode
   SPSR  |=   (1<<SPI2X);// double speed operation
  }//spi_init
@@ -322,12 +322,12 @@ int main(){
   // initialize
   segButtonInit();					// (must be in, why?)initialize the
 							//  external pushButtons and 7-seg
-  tcnt3_init();						// alarm volume
-  tcnt2_init();						// dimming
-  tcnt1_init();						// alarm noise
+//  tcnt3_init();						// alarm volume
+//  tcnt2_init();						// dimming
+//  tcnt1_init();						// alarm noise
   tcnt0_init();						// initialize clock
-  spi_init();
-  encoder_init();
+//  spi_init();
+//  encoder_init();
   sei();						// enable interrupts before entering loop
   //set default mode
   enum modes mode = clk;  
