@@ -2,5 +2,5 @@
 *.hex
 *.elf
 *.map
-.o
+*.o
 heart.c
