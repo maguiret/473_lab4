@@ -171,6 +171,9 @@ void segButtonInit(){
 			 		 //hundred = 0x30 thousand = 0x40
 }
 
+/******************************
+ initialize clock
+*******************************/
 void tcnt0_init(void){
   ASSR  |=  (1<<AS0);                //run off external 32khz osc (TOSC)
   TIMSK |= (1<<OCIE0);		     //enable interrupts for output compare match 0
@@ -178,6 +181,9 @@ void tcnt0_init(void){
   OCR0  |=  0x07f;                   //compare at 128
 }
 
+/******************************
+ initialize dimming 
+*******************************/
 void tcnt2_init(void){
   // fast PWM, no prescale, inverting mode
 //  TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<CS20)|(1<<COM21)|(1<<COM20);
@@ -185,6 +191,9 @@ void tcnt2_init(void){
   OCR2 = bright;		//compare @ 123
 }
 
+/******************************
+ initialize alarm noise 
+*******************************/
 void tcnt1_init(void){
   TCCR1A |= (1<<COM1A0);
   TCCR1B |= (1<<WGM12)|(1<<CS10);
@@ -192,6 +201,9 @@ void tcnt1_init(void){
   TCNT1  = 0;
   OCR1A  = freq;
 }
+/******************************
+ initialize alarm volume 
+*******************************/
 
 void tcnt3_init(void){
  //inverting, fast PWM, 64 prescaler
@@ -310,10 +322,10 @@ int main(){
   // initialize
   segButtonInit();					// (must be in, why?)initialize the
 							//  external pushButtons and 7-seg
-  tcnt3_init();
-  tcnt2_init();
-  tcnt1_init();
-  tcnt0_init();						// initialize counter timer zero
+  tcnt3_init();						// alarm volume
+  tcnt2_init();						// dimming
+  tcnt1_init();						// alarm noise
+  tcnt0_init();						// initialize clock
   spi_init();
   encoder_init();
   sei();						// enable interrupts before entering loop
