@@ -152,7 +152,7 @@ void segButtonOutputSet(){
   _delay_ms(1);
 }
 void segButtonInputSet(){
- PORTB = 0x70;                          // tristate buffer for pushbuttons enabled
+ PORTF = 0x70;                          // tristate buffer for pushbuttons enabled
  DDRA = 0x00;                           // PORTA set as input
  PORTA = 0xFF;                          // PORTA as pullups
  _delay_ms(1);
@@ -160,8 +160,8 @@ void segButtonInputSet(){
 
 void segButtonInit(){
   DDRA = 0xFF; 		 		 // segments on/pushbuttons off
-  DDRB = 0xF0;		 		 // pin 4-7 on portb set to output
-  PORTB = 0x00;		 		 // digit 4. one = 0x00 ten = 0x10 
+  DDRF = 0xF0;		 		 // pin 4-7 on portb set to output
+  PORTF = 0x00;		 		 // digit 4. one = 0x00 ten = 0x10 
 			 		 //hundred = 0x30 thousand = 0x40
 }
 
@@ -222,19 +222,19 @@ ISR(TIMER0_COMP_vect){
 *******************************************************/
 void segmentDisplay(){
   // this section handles the 7-seg displaying segments
-    PORTB &= (0<<PB6)|(0<<PB5)|(0<<PB4);//0x00;		// setting digit position 
+    PORTF &= (0<<PB6)|(0<<PB5)|(0<<PB4);//0x00;		// setting digit position 
     LEDSegment(minOne);					// settings segments based on digit position
     _delay_us(300);					// without delay -> ghosting
     PORTA = 0xFF;			 		// eliminates all ghosting
   
   // displaying tens
-    PORTB = (0<<PB6)|(0<<PB5)|(1<<PB4);//0x10;
+    PORTF = (0<<PB6)|(0<<PB5)|(1<<PB4);//0x10;
       LEDSegment(minTen);
     _delay_us(300);					
     PORTA = 0xFF;
   			
   // displaying colon
-    PORTB =(0<<PB6)|(1<<PB5)|(0<<PB4);// 0x30;
+    PORTF =(0<<PB6)|(1<<PB5)|(0<<PB4);// 0x30;
     if(colon){
       PORTA = 0xFC; 
     }
@@ -245,7 +245,7 @@ void segmentDisplay(){
     PORTA = 0xFF;			 
   
   //displaying hundreds
-    PORTB =(0<<PB6)|(1<<PB5)|(1<<PB4);// 0x30;
+    PORTF =(0<<PB6)|(1<<PB5)|(1<<PB4);// 0x30;
 //    if(hour <10){
 //      PORTA = 0xFF;
 //    }
@@ -255,7 +255,7 @@ void segmentDisplay(){
     _delay_us(300);			
     PORTA = 0xFF;			 
   
-    PORTB =(1<<PB6)|(0<<PB5)|(0<<PB4);// 0x40;
+    PORTF =(1<<PB6)|(0<<PB5)|(0<<PB4);// 0x40;
     if(hour<10){
       PORTA = 0xFF;
     }
@@ -270,7 +270,7 @@ void segmentDisplay(){
 Initialize Spi
 ********************************/
 void spi_init(void){
-  DDRB  |=   0x07;//Turn on SS, MOSI, SCLK
+  DDRB  |=   0x87;//Turn on SS, MOSI, SCLK, pwm for 7-seg 
   SPCR  |=   (1<<SPE)|(1<<MSTR);//set up SPI mode
   SPSR  |=   (1<<SPI2X);// double speed operation
  }//spi_init
