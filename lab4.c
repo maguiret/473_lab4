@@ -9,12 +9,14 @@ for ISR
 #define en1B 1
 #define en2A 2
 #define en2B 3
-
-#define bright 0xff
-//uint8_t mode = 1;               // holds value being incremented/decremented
 uint8_t encoder = 0;
 uint8_t prevEncoder0 = 1;
 uint8_t prevEncoder1 = 1;
+
+/************************
+  for brightness of 7-seg
+*************************/
+#define bright 0x0f
 
 /********************************
 Modes the Alarm Clock will be in 

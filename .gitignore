@@ -1,6 +1,6 @@
 *.swp
-*.c
 *.hex
 *.elf
 *.map
-*.o
+.o
+heart.c
