@@ -19,12 +19,12 @@ uint8_t prevEncoder1 = 1;
 /************************
   for brightness of 7-seg
 *************************/
-#define bright 0xFF		// 00 = off, ff = on
+#define bright 0x90		// 00 = off, ff = on
 
 /************************
  for alarm 
 *************************/
-#define freq 30096		// between 62000 and 10096
+#define freq 10096		// between 62000 and 10096
 #define volume 0x90
 
 /********************************
@@ -197,10 +197,10 @@ void tcnt2_init(void){
 /******************************
  initialize alarm noise 
 *******************************/
-// fast PWM, no prescale
+// fast PWM, no prescale, toggle
 void tcnt1_init(void){
-  TCCR1A |= (1<<COM1A1)|(1<<COM1A0)|(1<<WGM11)|(1<<WGM10);
-  TCCR1B |= (1<<WGM12)|(1<<WGM13)|(1<<CS10);
+  TCCR1A |= (1<<COM1A0);
+  TCCR1B |= (1<<WGM12)|(1<<CS10);
   TCCR1C = 0x00;
   TCNT1  = 0;
   OCR1A  = freq; //PB5  
@@ -319,7 +319,7 @@ void spi_init(void){
  }//spi_init
 
 void encoder_init(){
-  DDRE |= (1<<PE5)|(1<<PE6);
+  DDRE |= (1<<PE5)|(1<<PE6)|(1<<PE3);
 } 
 
 int main(){
