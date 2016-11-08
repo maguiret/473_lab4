@@ -25,7 +25,7 @@ uint8_t prevEncoder1 = 1;
  for alarm 
 *************************/
 #define freq 10096		// between 62000 and 10096
-#define volume 0x90
+#define volume 0x00
 
 /********************************
 Modes the Alarm Clock will be in 
@@ -225,8 +225,8 @@ void tcnt3_init(void){
  based on count_7ms
 ************************/
 void timeExtract(){
-//  if((count_7ms %128) == 0){ 		// if one second has passed
-  if((count_7ms %32) == 0){ 		// for debugging. REMOVE on final
+  if((count_7ms %128) == 0){ 		// if one second has passed
+//  if((count_7ms %32) == 0){ 		// for debugging. REMOVE on final
     switch_count++;
     colon ^= 0xFF;			// toggling the colon every second
   }
@@ -325,9 +325,9 @@ int main(){
   // initialize
   segButtonInit();					// (must be in, why?)initialize the
 							//  external pushButtons and 7-seg
-//  tcnt3_init();						// alarm volume
+  tcnt3_init();						// alarm volume
   tcnt2_init();						// dimming
-//  tcnt1_init();						// alarm noise
+  tcnt1_init();						// alarm noise
   tcnt0_init();						// initialize clock
   spi_init();
   encoder_init();
