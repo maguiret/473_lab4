@@ -25,7 +25,7 @@ uint8_t prevEncoder1 = 1;
  for alarm 
 *************************/
 #define freq 10096		// between 62000 and 10096
-#define volume 0x90
+#define volume 0xC5F0		// 0xFFF0 = off
 
 /********************************
 Modes the Alarm Clock will be in 
@@ -42,6 +42,7 @@ for the 7-seg
 *************/
 volatile int16_t switch_count = 0;
 int minute = 0, hour = 0, minOne = 0, minTen = 0, hOne = 0, hTen = 0;
+int alarmMinute = 0, alarmHour = 0;
 uint8_t colon = 0xFF, one = 0, ten = 0;
 
 /************************************************************************
@@ -210,13 +211,14 @@ void tcnt1_init(void){
 *******************************/
 
 void tcnt3_init(void){
- //toggle, fast PWM, 64 prescaler
-  TCCR3A |= (1<<COM3A0)|(1<<WGM31)|(1<<WGM30);
+ //inverting, fast PWM TOP ICR3, 64 prescaler
+  TCCR3A |= (1<<COM3A1)|(1<<COM3A0)|(1<<WGM31);
 //  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS31)|(1<<CS30);
   TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS30);
   TCCR3C = 0x00;
   TCNT3  = 0;
   OCR3A  = volume; //PE3
+  ICR3   = 0xFFFF;
 }
 
 
@@ -352,10 +354,10 @@ int main(){
         break;
       }
       case setClk:{
-          DDRC = 0xFF;
-          PORTC = 0x00;
-          DDRD = 0x00;
-          PORTD = 0xFF;
+//          DDRC = 0xFF;
+//          PORTC = 0x00;
+//          DDRD = 0x00;
+//          PORTD = 0xFF;
         segButtonInputSet();
         while(!(debounceSwitch(PINA, 0))){ 		// user confirmation may change to button 7
           // loading encoder data into shift register
@@ -379,7 +381,7 @@ int main(){
             }
           }
           prevEncoder0 = (encoder & (1<<en1A));
-
+//second encoder check
            a_current = ((encoder>>2) & 0x01);
            b_current = ((encoder>>3) & 0x01);
           
@@ -399,20 +401,7 @@ int main(){
           } 
           a_past = a_current;
           b_past = b_current;
-
- 
-                                                                 // encoder1.A 
-//          if(((encoder & (1<<en2A)) == 0) && (prevEncoder1 == 1)){ // checks for falling edge of
-//                                                                 // encoder1.A 
-//            if((encoder & (1<<en2A)) != (encoder & (1<<en2B))){  // if encoder1.B is different from encoder1.A, clockwise
-//              hour++;
-//            }
-//            else{
-//              hour--;
-//            }
-//          }
-//          prevEncoder1 = (encoder & (1<<en2A));
-
+// taking care of limits
           if(minute == 60){
             hour++;
             minute = 0;
@@ -440,7 +429,13 @@ int main(){
         break;
       }
       case setAlarm:{
-      
+        segButtonInputSet();
+        while(!(debounceSwitch(PINA, 1))){ 		// user confirmation may change to button 7
+         
+        segButtonInputSet(); 
+        } 
+        segButtonOutputSet();
+        mode = clk;
         break;
       }
     }
