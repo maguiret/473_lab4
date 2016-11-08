@@ -210,10 +210,10 @@ void tcnt1_init(void){
 *******************************/
 
 void tcnt3_init(void){
- //inverting, fast PWM, 64 prescaler
-  TCCR3A |= (1<<COM3A1)|(1<<COM3A0)|(1<<WGM31)|(1<<WGM30);
-  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS31)|(1<<CS30);
-//  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS30);
+ //toggle, fast PWM, 64 prescaler
+  TCCR3A |= (1<<COM3A0)|(1<<WGM31)|(1<<WGM30);
+//  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS31)|(1<<CS30);
+  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS30);
   TCCR3C = 0x00;
   TCNT3  = 0;
   OCR3A  = volume; //PE3
