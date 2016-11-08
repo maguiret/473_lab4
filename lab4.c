@@ -2,6 +2,9 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
+uint8_t a_current = 0, b_current = 0, a_past = 0, b_past = 0;
+
+
 /******
 for ISR
 *******/
@@ -16,7 +19,7 @@ uint8_t prevEncoder1 = 1;
 /************************
   for brightness of 7-seg
 *************************/
-#define bright 0x90
+#define bright 0xFF		// 00 = off, ff = on
 
 /************************
  for alarm 
@@ -186,8 +189,8 @@ void tcnt0_init(void){
 *******************************/
 void tcnt2_init(void){
   // fast PWM, no prescale, inverting mode
-//  TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<CS20)|(1<<COM21)|(1<<COM20);
-    TCCR2 =  (1<<WGM21) | (1<<WGM20) | (1<<COM21) | (1<<COM20) | (1<<CS20) | (1<<CS21);
+  TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<CS20)|(1<<COM21)|(1<<COM20);
+//    TCCR2 =  (1<<WGM21) | (1<<WGM20) | (1<<COM21) | (1<<COM20) | (1<<CS20) | (1<<CS21);
   OCR2 = bright;		//compare @ 123
 }
 
@@ -323,11 +326,11 @@ int main(){
   segButtonInit();					// (must be in, why?)initialize the
 							//  external pushButtons and 7-seg
 //  tcnt3_init();						// alarm volume
-//  tcnt2_init();						// dimming
+  tcnt2_init();						// dimming
 //  tcnt1_init();						// alarm noise
   tcnt0_init();						// initialize clock
-//  spi_init();
-//  encoder_init();
+  spi_init();
+  encoder_init();
   sei();						// enable interrupts before entering loop
   //set default mode
   enum modes mode = clk;  
@@ -364,18 +367,41 @@ int main(){
           while(bit_is_clear(SPSR,SPIF)) {}              // wait till data sent out 
           encoder = SPDR;                                  // collecting input from encoders
           PORTE |= (1<<PE5);                               // setting CLK INH back to high
-          if(((encoder & (1<<en1A)) == 0) & (prevEncoder0 == 1)){ // checks for falling edge of
+
+          if(((encoder & (1<<en1A)) == 0) && (prevEncoder0 == 1)){ // checks for falling edge of
                                                                  // encoder1.A 
             if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  // if encoder1.B is different from encoder1.A, clockwise
-              minute++;
+              hour++;
             }
             else{
-              minute--;
+              hour--;
             }
           }
           prevEncoder0 = (encoder & (1<<en1A));
 
-//          if(((encoder & (1<<en2A)) == 0) & (prevEncoder1 == 1)){ // checks for falling edge of
+           a_current = ((encoder>>2) & 0x01);
+           b_current = ((encoder>>3) & 0x01);
+          
+          if(a_past == a_current){
+            if((a_current==1) && (b_past < b_current)){
+              minute++;
+            }
+            if((a_current == 1) && (b_past > b_current)){
+              minute--;
+            }
+            if((a_current == 0) && (b_past > b_current)){
+              minute++;
+            }
+            if((a_current == 0) && (b_past < b_current)){
+              minute--;
+            }
+          } 
+          a_past = a_current;
+          b_past = b_current;
+
+ 
+                                                                 // encoder1.A 
+//          if(((encoder & (1<<en2A)) == 0) && (prevEncoder1 == 1)){ // checks for falling edge of
 //                                                                 // encoder1.A 
 //            if((encoder & (1<<en2A)) != (encoder & (1<<en2B))){  // if encoder1.B is different from encoder1.A, clockwise
 //              hour++;
