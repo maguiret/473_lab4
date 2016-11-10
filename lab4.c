@@ -35,7 +35,7 @@ uint8_t prevEncoder1 = 1;
 /************************
  for alarm 
 *************************/
-#define freq 10096		// between 62000 and 10096
+#define freq 60000//10096		// between 62000 and 10096
 #define volume 0xC5F0		// 0xFFF0 = off
 
 /********************************

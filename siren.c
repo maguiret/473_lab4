@@ -46,12 +46,13 @@ ISR(TIMER3_COMPA_vect) {
 	}//if
 	OCR1A = count;
 }//ISR
-//**************************************************************************************************************************
+//**************************************************************************************************************************K
 //***********	Main	****************************************************************************************************
 //**************************************************************************************************************************
 int main(){
 	_initalize();
-	sei();     //set GIE to enable interrupts
+//	sei();     //set GIE to enable interrupts
+        OCR1A = 10000;
 	while(1){
 	} //do forever
 }  // main
@@ -69,7 +70,6 @@ void _initalize(void){
 	TCCR1B |=(1<<WGM12)| (1<<CS10);			// Wave form generation: WGM13 = 0 & WGM12 = 1, No pre-sacale == CS12 =0, CS11 = 0, CS12 =1
 	TCCR1C = 0x00;							// No forced compare
 	TCNT1 = 0;								// Initial value for CTC counter
-	//OCR1A = 10;							// Top variable for CTC set in interrupt
 
 
 	// Set up Timer/Counter3:CTC mode, output pin does not toggle, no prescaling, 
