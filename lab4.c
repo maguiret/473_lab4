@@ -19,7 +19,7 @@ uint8_t prevEncoder1 = 1;
 /************************
   for brightness of 7-seg
 *************************/
-#define bright 0x55		// off=00
+#define bright 0x55		// off=00    on =55
 
 /************************
  for alarm 
