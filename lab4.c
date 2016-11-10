@@ -19,7 +19,7 @@ uint8_t prevEncoder1 = 1;
 /************************
   for brightness of 7-seg
 *************************/
-#define bright 0x90		// 00 = off, ff = on
+#define bright 0x55		// off=00
 
 /************************
  for alarm 
@@ -162,7 +162,7 @@ void segButtonOutputSet(){
   _delay_ms(1);
 }
 void segButtonInputSet(){
- PORTF = 0x70;                          // tristate buffer for pushbuttons enabled
+ PORTD = 0x70;                          // tristate buffer for pushbuttons enabled
  DDRA = 0x00;                           // PORTA set as input
  PORTA = 0xFF;                          // PORTA as pullups
  _delay_ms(1);
@@ -170,8 +170,8 @@ void segButtonInputSet(){
 
 void segButtonInit(){
   DDRA = 0xFF; 		 		 // segments on/pushbuttons off
-  DDRF = 0x70;		 		 // pin 4-7 on portb set to output
-  PORTF = 0x00;		 		 // digit 4. one = 0x00 ten = 0x10 
+  DDRD = 0x70;		 		 // pin 4-7 on portb set to output
+  PORTD = 0x00;		 		 // digit 4. one = 0x00 ten = 0x10 
 			 		 //hundred = 0x30 thousand = 0x40
 }
 
@@ -190,8 +190,9 @@ void tcnt0_init(void){
 *******************************/
 void tcnt2_init(void){
   // fast PWM, no prescale, inverting mode
-  TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<CS20)|(1<<COM21)|(1<<COM20);
-//    TCCR2 =  (1<<WGM21) | (1<<WGM20) | (1<<COM21) | (1<<COM20) | (1<<CS20) | (1<<CS21);
+  //TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<CS20)|(1<<COM21)|(1<<COM20);
+  //TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<CS20)|(1<<COM21);//|(1<<COM20);
+    TCCR2 =  (1<<WGM21) | (1<<WGM20) | (1<<COM21) | (1<<COM20) | (1<<CS20) | (1<<CS21);
   OCR2 = bright;		//compare @ 123 PB7
 }
 
@@ -267,19 +268,19 @@ ISR(TIMER0_COMP_vect){
 *******************************************************/
 void segmentDisplay(){
   // this section handles the 7-seg displaying segments
-    PORTF &= (0<<PF6)|(0<<PF5)|(0<<PF4);//0x00;		// setting digit position 
+    PORTD &= (0<<PF6)|(0<<PF5)|(0<<PF4);//0x00;		// setting digit position 
     LEDSegment(minOne);					// settings segments based on digit position
     _delay_us(300);					// without delay -> ghosting
     PORTA = 0xFF;			 		// eliminates all ghosting
   
   // displaying tens
-    PORTF = (0<<PF6)|(0<<PF5)|(1<<PF4);//0x10;
+    PORTD = (0<<PF6)|(0<<PF5)|(1<<PF4);//0x10;
       LEDSegment(minTen);
     _delay_us(300);					
     PORTA = 0xFF;
   			
   // displaying colon
-    PORTF =(0<<PF6)|(1<<PF5)|(0<<PF4);// 0x30;
+    PORTD =(0<<PF6)|(1<<PF5)|(0<<PF4);// 0x30;
     if(colon){
       PORTA = 0xFC; 
     }
@@ -290,7 +291,7 @@ void segmentDisplay(){
     PORTA = 0xFF;			 
   
   //displaying hundreds
-    PORTF =(0<<PF6)|(1<<PF5)|(1<<PF4);// 0x30;
+    PORTD =(0<<PF6)|(1<<PF5)|(1<<PF4);// 0x30;
 //    if(hour <10){
 //      PORTA = 0xFF;
 //    }
@@ -300,7 +301,7 @@ void segmentDisplay(){
     _delay_us(300);			
     PORTA = 0xFF;			 
   
-    PORTF =(1<<PF6)|(0<<PF5)|(0<<PF4);// 0x40;
+    PORTD =(1<<PF6)|(0<<PF5)|(0<<PF4);// 0x40;
     if(hour<10){
       PORTA = 0xFF;
     }
