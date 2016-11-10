@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "hd44780.h"
 
-
+uint8_t dimFlag = 0x00;
 uint8_t a_current = 0, b_current = 0, a_past = 0, b_past = 0;
 /*************
 for adc
@@ -30,7 +30,7 @@ uint8_t prevEncoder1 = 1;
 /************************
   for brightness of 7-seg
 *************************/
-#define bright 0x55		// off=00    on =55
+#define bright 0xAA		// off=00    on =55
 
 /************************
  for alarm 
@@ -199,11 +199,10 @@ void tcnt0_init(void){
 /******************************
  initialize dimming 
 *******************************/
-void tcnt2_init(void){
+void tcnt2_init(void){ //pg. 159
   // fast PWM, no prescale, inverting mode
-  //TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<CS20)|(1<<COM21)|(1<<COM20);
-  //TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<CS20)|(1<<COM21);//|(1<<COM20);
-    TCCR2 =  (1<<WGM21) | (1<<WGM20) | (1<<COM21) | (1<<COM20) | (1<<CS20) | (1<<CS21);
+  TCCR2 |= (1<<WGM21)|(1<<WGM20)|(1<<COM21)|(1<<COM20)|(1<<CS0);
+//  TCCR2 =  (1<<WGM21)|(1<<WGM20)|(1<<COM21)|(1<<COM20)|(1<<CS20)|(1<<CS21);
   OCR2 = bright;		//compare @ 123 PB7
 }
 
@@ -340,10 +339,34 @@ void encoder_init(){
   DDRE |= (1<<PE5)|(1<<PE6)|(1<<PE3);
 } 
 
+void adc_get(){
+ ADCSRA |=(1<<ADSC);
+
+ while(bit_is_clear(ADCSRA, ADIF)){};//spin while interrupt flag not set
+
+ ADCSRA |= (1<<ADIF);//its done, clear flag by writing a one 
+
+  adc_result = ADC;                      //read the ADC output as 16 bits
+
+  //div() function computes the value num/denom and returns the quotient and
+  //remainder in a structure called div_t that contains two members, quot and rem. 
+
+  //now determine Vin, where Vin = (adc_result/204.8)
+//  fp_adc_result = div(adc_result, 205);              //do division by 205 (204.8 to be exact)
+//  if(fp_adc_result.quot >= 2){
+  if((adc_result/205) >= 2){
+    OCR2 = 0x0f;
+  }
+  else{
+    OCR2 = 0xf0;
+  }
+
+}
 int main(){
   // initialize
   segButtonInit();					// (must be in, why?)initialize the
 							//  external pushButtons and 7-seg
+  // initializing adc
   DDRF  &= ~(_BV(DDF7));  
   PORTF &= ~(_BV(PF7)); 
   ADMUX |= (1<<REFS0)|(1<<MUX2)|(1<<MUX1)|(1<<MUX0);
@@ -370,15 +393,16 @@ int main(){
         hOne = position0(hour);
         hTen = position1(hour);
         segButtonOutputSet();				// switches from push buttons to display
+    // adc part
+        if(dimFlag == 100){
+          adc_get();
+          dimFlag = 0;
+        }
         segmentDisplay();				// displaying the 7-seg
-      
+        dimFlag++;      
         break;
       }
       case setClk:{
-//          DDRC = 0xFF;
-//          PORTC = 0x00;
-//          DDRD = 0x00;
-//          PORTD = 0xFF;
         segButtonInputSet();
         while(!(debounceSwitch(PINA, 0))){ 		// user confirmation may change to button 7
           // loading encoder data into shift register
@@ -469,19 +493,6 @@ int main(){
       mode = setAlarm;
     }
     segButtonOutputSet();
-    // adc part
-     ADCSRA |=(1<<ADSC);
-    while(bit_is_clear(ADCSRA, ADIF)){};//spin while interrupt flag not set
-    ADCSRA |= (1<<ADIF);//its done, clear flag by writing a one 
-    adc_result = ADC;                      //read the ADC output as 16 bits
-    fp_adc_result = div(adc_result, 205);
-    if(fp_adc_result.quot > 2){
-      DDRE |=(1<<PE1);
-      PORTE |= (1<<PE1);
-    }
-    else{
-      PORTE = 0;
-    }
   }//while
 
 }//main
