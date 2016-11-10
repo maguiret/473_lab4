@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "hd44780.h"
-
+//
 uint8_t dimFlag = 0x00;
 uint8_t a_current = 0, b_current = 0, a_past = 0, b_past = 0;
 /*************
