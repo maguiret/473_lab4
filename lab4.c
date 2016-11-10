@@ -209,19 +209,27 @@ void tcnt2_init(void){ //pg. 159
 /******************************
  initialize alarm noise 
 *******************************/
-// fast PWM, no prescale, toggle
+// fast PWM TOP = ICR1, no prescale, invert
 void tcnt1_init(void){
-  TCCR1A |= (1<<COM1A0);
-  TCCR1B |= (1<<WGM12)|(1<<CS10);
+  TCCR1A |= (1<<COM1A1)|(1<<COM1A0)|(1<<WGM11);
+//  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS31)|(1<<CS30);
+  TCCR1B |= (1<<WGM13)|(1<<WGM12)|(1<<CS10);
   TCCR1C = 0x00;
   TCNT1  = 0;
-  OCR1A  = freq; //PB5  
+  OCR1A  = volume; //PE3
+  ICR1   = 0xFFFF;
+
+//  TCCR1A |= (1<<COM1A0);
+//  TCCR1B |= (1<<WGM12)|(1<<CS10);
+//  TCCR1C = 0x00;
+//  TCNT1  = 0;
+//  OCR1A  = freq; //PB5  
 }
 /******************************
  initialize alarm volume 
 *******************************/
 
-void tcnt3_init(void){
+void tcnt3_init(void){//2.3 Vrms
  //inverting, fast PWM TOP ICR3, 64 prescaler
   TCCR3A |= (1<<COM3A1)|(1<<COM3A0)|(1<<WGM31);
 //  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS31)|(1<<CS30);
