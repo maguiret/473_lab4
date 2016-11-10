@@ -1,9 +1,20 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include <string.h>
+#include <stdlib.h>
+#include "hd44780.h"
+
 
 uint8_t a_current = 0, b_current = 0, a_past = 0, b_past = 0;
-
+/*************
+for adc
+**************/
+uint8_t  i;              //dummy variable
+uint16_t adc_result;     //holds adc result 
+char     lcd_str_h[16];  //holds string to send to lcd  
+char     lcd_str_l[16];  //holds string to send to lcd  
+div_t    fp_adc_result, fp_low_result;  //double fp_adc_result; 
 
 /******
 for ISR
@@ -317,6 +328,10 @@ Initialize Spi
 ********************************/
 void spi_init(void){
   DDRB  |=   (0x07)|(1<<PB7)|(1<<PB5);//Turn on SS, MOSI, SCLK, pwm for 7-seg, volume for alarm
+  PORTB |= _BV(PB1);
+  DDRF  |= 0x08;
+  PORTF &= 0xF7;
+
   SPCR  |=   (1<<SPE)|(1<<MSTR);//set up SPI mode
   SPSR  |=   (1<<SPI2X);// double speed operation
  }//spi_init
@@ -329,6 +344,11 @@ int main(){
   // initialize
   segButtonInit();					// (must be in, why?)initialize the
 							//  external pushButtons and 7-seg
+  DDRF  &= ~(_BV(DDF7));  
+  PORTF &= ~(_BV(PF7)); 
+  ADMUX |= (1<<REFS0)|(1<<MUX2)|(1<<MUX1)|(1<<MUX0);
+  ADCSRA |= (1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0);
+  
   tcnt3_init();						// alarm volume
   tcnt2_init();						// dimming
   tcnt1_init();						// alarm noise
@@ -449,6 +469,19 @@ int main(){
       mode = setAlarm;
     }
     segButtonOutputSet();
+    // adc part
+     ADCSRA |=(1<<ADSC);
+    while(bit_is_clear(ADCSRA, ADIF)){};//spin while interrupt flag not set
+    ADCSRA |= (1<<ADIF);//its done, clear flag by writing a one 
+    adc_result = ADC;                      //read the ADC output as 16 bits
+    fp_adc_result = div(adc_result, 205);
+    if(fp_adc_result.quot > 2){
+      DDRE |=(1<<PE1);
+      PORTE |= (1<<PE1);
+    }
+    else{
+      PORTE = 0;
+    }
   }//while
 
 }//main

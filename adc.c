@@ -53,19 +53,19 @@ while(1){
  ADCSRA |= (1<<ADIF);//its done, clear flag by writing a one 
 
   adc_result = ADC;                      //read the ADC output as 16 bits
-  if(adc_result<2){
-    DDRE |=(1<<PE1);
-    PORTE |= (1<<PE1);
-  }
-  else{
-    PORTE = 0;
-  }
    
   //div() function computes the value num/denom and returns the quotient and
   //remainder in a structure called div_t that contains two members, quot and rem. 
   
   //now determine Vin, where Vin = (adc_result/204.8)
   fp_adc_result = div(adc_result, 205);              //do division by 205 (204.8 to be exact)
+  if(fp_adc_result.quot > 2){
+    DDRE |=(1<<PE1);
+    PORTE |= (1<<PE1);
+  }
+  else{
+    PORTE = 0;
+  }
   itoa(fp_adc_result.quot, lcd_str_h, 10);           //convert non-fractional part to ascii string
   fp_low_result = div((fp_adc_result.rem*100), 205); //get the decimal fraction into non-fractional form 
   itoa(fp_low_result.quot, lcd_str_l, 10);           //convert fractional part to ascii string
