@@ -352,13 +352,16 @@ void adc_get(){
   //remainder in a structure called div_t that contains two members, quot and rem. 
 
   //now determine Vin, where Vin = (adc_result/204.8)
-//  fp_adc_result = div(adc_result, 205);              //do division by 205 (204.8 to be exact)
-//  if(fp_adc_result.quot >= 2){
-  if((adc_result/205) >= 2){
+  fp_adc_result = div(adc_result, 205);              //do division by 205 (204.8 to be exact)
+  if(fp_adc_result.quot >= 3){
+//  if((adc_result/205) >= 2){ //room = <.8, dark = 3, light = 
     OCR2 = 0x0f;
   }
+  else if(fp_adc_result.quot >=2){
+    OCR2 = 0x20;
+  }
   else{
-    OCR2 = 0xf0;
+    OCR2 = 0xF0;
   }
 
 }
