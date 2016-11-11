@@ -38,7 +38,7 @@ uint8_t prevEncoder1 = 1;
 #define freq 60000//10096		// between 62000 and 10096
 #define volume 0xC5F0		// 0xFFF0 = off
 uint8_t aHour = 0;
-uint8_t aMinute  =5;
+uint8_t aMinute  =1;
 /********************************
 Modes the Alarm Clock will be in 
 ********************************/
@@ -493,13 +493,18 @@ int main(){
         hTen = position1(hour);
         segButtonOutputSet();				// switches from push buttons to display
     // adc part
-        if(dimFlag == 100){
+        if(dimFlag == 100){				//dimmer functionality
           adc_get();
           dimFlag = 0;
         }
         if((minute == aMinute) && hour == aHour){
-          TCCR3B |=(1<<CS30);				//turning alarm on
+          TCCR3B |=(1<<CS30);				// turning alarm on
         }
+        segButtonInputSet();
+        if(debounceSwitch(PINA,6)){
+          TCCR3B &= ~(1<<CS30);				// turning alarm off
+        }
+        segButtonOutputSet();
         segmentDisplay();				// displaying the 7-seg
         dimFlag++;      
         break;
