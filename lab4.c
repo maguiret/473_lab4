@@ -209,15 +209,15 @@ void tcnt2_init(void){ //pg. 159
 /******************************
  initialize alarm noise 
 *******************************/
-// fast PWM TOP = ICR1, no prescale, invert
+// CTC TOP = ICR1, no prescale, invert
 void tcnt1_init(void){
-  TCCR1A |= (1<<COM1A1)|(1<<COM1A0)|(1<<WGM11);
+  TCCR1A |= (1<<COM1A0);
 //  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS31)|(1<<CS30);
-  TCCR1B |= (1<<WGM13)|(1<<WGM12)|(1<<CS10);
+  TCCR1B |= (1<<WGM12)|(1<<CS10);
   TCCR1C = 0x00;
   TCNT1  = 0;
   OCR1A  = volume; //PE3
-  ICR1   = 0xFFFF;
+//  ICR1   = 0xFFFF;
 
 //  TCCR1A |= (1<<COM1A0);
 //  TCCR1B |= (1<<WGM12)|(1<<CS10);
@@ -233,21 +233,13 @@ void tcnt3_init(void){//2.3 Vrms
  //inverting, fast PWM TOP ICR3, 64 prescaler
   TCCR3A |= (1<<COM3A1)|(1<<COM3A0)|(1<<WGM31);
 //  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS31)|(1<<CS30);
-  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS30);
+//  TCCR3B |= (1<<WGM33)|(1<<WGM32)|(1<<CS30);
+  TCCR3B |= (1<<WGM33)|(1<<WGM32);
   TCCR3C = 0x00;
   TCNT3  = 0;
   OCR3A  = volume; //PE3
   ICR3   = 0xFFFF;
-}
-
-
-
-/************************************
- collects the tens and ones place of hour and minutes
- based on count_7ms
-************************/
-void timeExtract(){
-  if((count_7ms %128) == 0){ 		// if one second has passed
+} /************************************ collects the tens and ones place of hour and minutes based on count_7ms ************************/ void timeExtract(){ if((count_7ms %128) == 0){ 		// if one second has passed
 //  if((count_7ms %32) == 0){ 		// for debugging. REMOVE on final
     switch_count++;
     colon ^= 0xFF;			// toggling the colon every second
@@ -487,10 +479,11 @@ int main(){
       case setAlarm:{
         segButtonInputSet();
         while(!(debounceSwitch(PINA, 1))){ 		// user confirmation may change to button 7
-         
+                
         segButtonInputSet(); 
         } 
         segButtonOutputSet();
+        TCCR3B |=(1<<CS30);
         mode = clk;
         break;
       }
