@@ -37,7 +37,8 @@ uint8_t prevEncoder1 = 1;
 *************************/
 #define freq 60000//10096		// between 62000 and 10096
 #define volume 0xC5F0		// 0xFFF0 = off
-
+uint8_t aHour = 0;
+uint8_t aMinute  =0;
 /********************************
 Modes the Alarm Clock will be in 
 ********************************/
@@ -239,8 +240,20 @@ void tcnt3_init(void){//2.3 Vrms
   TCNT3  = 0;
   OCR3A  = volume; //PE3
   ICR3   = 0xFFFF;
-} /************************************ collects the tens and ones place of hour and minutes based on count_7ms ************************/ void timeExtract(){ if((count_7ms %128) == 0){ 		// if one second has passed
-//  if((count_7ms %32) == 0){ 		// for debugging. REMOVE on final
+}
+
+/********************************************************************** 
+collects the tens and ones place of hour and minutes based on count_7ms
+When the TCNT0 overflow interrupt occurs, the count_7ms variable is    
+incremented.  Every 7680 interrupts the minutes counter is incremented.
+tcnt0 interrupts come at 7.8125ms internals.
+ 1/32768         = 30.517578uS
+(1/32768)*256    = 7.8125ms
+(1/32768)*256*64 = 500mS 
+*i*********************************************************************/ 
+void timeExtract(){
+  if((count_7ms %128) == 0){ 		// if one second has passed
+//  if((count_7ms %8) == 0){ 		// for debugging. REMOVE on final
     switch_count++;
     colon ^= 0xFF;			// toggling the colon every second
   }
@@ -365,6 +378,55 @@ void adc_get(){
   }
 
 }
+/***************************************************************
+collects the encoder input and changes hour, minutes accordinly
+used for LCD too
+****************************************************************/
+encoderInput(){
+  // loading encoder data into shift register
+  PORTE |= (1<<PE5);             				// sets CLK INH high
+  PORTE &= ~(1<<PE6);            				// toggle SHLD low to high           
+  PORTE |= (1<<PE6);             
+  //shifting data out to MISO
+  PORTE &= ~(1<<PE5);
+  SPDR = 0x00;							// garbage data
+  while(bit_is_clear(SPSR,SPIF)) {}              		// wait till data sent out 
+  encoder = SPDR;                                  		// collecting input from encoders
+  PORTE |= (1<<PE5);                               		// setting CLK INH back to high
+ 
+  if(((encoder & (1<<en1A)) == 0) && (prevEncoder0 == 1)){ 	// checks for falling edge of
+                                                         	// encoder1.A 
+    if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  	// if encoder1.B is different from encoder1.A, clockwise
+      hour++;
+    }
+    else{
+      hour--;
+    }
+  }
+  prevEncoder0 = (encoder & (1<<en1A));
+// second encoder check why doesn't my logic work for this too?
+   a_current = ((encoder>>2) & 0x01);
+   b_current = ((encoder>>3) & 0x01);
+  
+  if(a_past == a_current){
+    if((a_current==1) && (b_past < b_current)){
+      minute++;
+    }
+    if((a_current == 1) && (b_past > b_current)){
+      minute--;
+    }
+//    if((a_current == 0) && (b_past > b_current)){
+//      minute++;
+//    }
+//    if((a_current == 0) && (b_past < b_current)){
+//      minute--;
+//    }
+  } 
+  a_past = a_current;
+  b_past = b_current;
+}
+
+
 int main(){
   // initialize
   segButtonInit();					// (must be in, why?)initialize the
@@ -408,47 +470,12 @@ int main(){
       case setClk:{
         segButtonInputSet();
         while(!(debounceSwitch(PINA, 0))){ 		// user confirmation may change to button 7
-          // loading encoder data into shift register
-          PORTE |= (1<<PE5);             // sets CLK INH high
-          PORTE &= ~(1<<PE6);            // toggle SHLD low to high           
-          PORTE |= (1<<PE6);             
-          //shifting data out to MISO
-          PORTE &= ~(1<<PE5);
-          SPDR = 0x00;		// garbage data
-          while(bit_is_clear(SPSR,SPIF)) {}              // wait till data sent out 
-          encoder = SPDR;                                  // collecting input from encoders
-          PORTE |= (1<<PE5);                               // setting CLK INH back to high
+          encoderInput();
 
-          if(((encoder & (1<<en1A)) == 0) && (prevEncoder0 == 1)){ // checks for falling edge of
-                                                                 // encoder1.A 
-            if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  // if encoder1.B is different from encoder1.A, clockwise
-              hour++;
-            }
-            else{
-              hour--;
-            }
-          }
-          prevEncoder0 = (encoder & (1<<en1A));
-//second encoder check
-           a_current = ((encoder>>2) & 0x01);
-           b_current = ((encoder>>3) & 0x01);
-          
-          if(a_past == a_current){
-            if((a_current==1) && (b_past < b_current)){
-              minute++;
-            }
-            if((a_current == 1) && (b_past > b_current)){
-              minute--;
-            }
-            if((a_current == 0) && (b_past > b_current)){
-              minute++;
-            }
-            if((a_current == 0) && (b_past < b_current)){
-              minute--;
-            }
-          } 
-          a_past = a_current;
-          b_past = b_current;
+
+
+
+
 // taking care of limits
           if(minute == 60){
             hour++;
@@ -479,7 +506,7 @@ int main(){
       case setAlarm:{
         segButtonInputSet();
         while(!(debounceSwitch(PINA, 1))){ 		// user confirmation may change to button 7
-                
+                          
         segButtonInputSet(); 
         } 
         segButtonOutputSet();
