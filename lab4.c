@@ -382,7 +382,7 @@ void adc_get(){
 collects the encoder input and changes hour, minutes accordinly
 used for LCD too
 ****************************************************************/
-encoderInput(){
+encoderInput(uint8_t flag){
   // loading encoder data into shift register
   PORTE |= (1<<PE5);             				// sets CLK INH high
   PORTE &= ~(1<<PE6);            				// toggle SHLD low to high           
@@ -393,37 +393,71 @@ encoderInput(){
   while(bit_is_clear(SPSR,SPIF)) {}              		// wait till data sent out 
   encoder = SPDR;                                  		// collecting input from encoders
   PORTE |= (1<<PE5);                               		// setting CLK INH back to high
- 
-  if(((encoder & (1<<en1A)) == 0) && (prevEncoder0 == 1)){ 	// checks for falling edge of
-                                                         	// encoder1.A 
-    if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  	// if encoder1.B is different from encoder1.A, clockwise
-      hour++;
+  if(flag){ 
+    if(((encoder & (1<<en1A)) == 0) && (prevEncoder0 == 1)){ 	// checks for falling edge of
+                                                           	// encoder1.A 
+      if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  	// if encoder1.B is different from encoder1.A, clockwise
+        hour++;
+      }
+      else{
+        hour--;
+      }
     }
-    else{
-      hour--;
-    }
-  }
   prevEncoder0 = (encoder & (1<<en1A));
 // second encoder check why doesn't my logic work for this too?
    a_current = ((encoder>>2) & 0x01);
    b_current = ((encoder>>3) & 0x01);
   
   if(a_past == a_current){
-    if((a_current==1) && (b_past < b_current)){
-      minute++;
+      if((a_current==1) && (b_past < b_current)){
+        minute++;
+      }
+      if((a_current == 1) && (b_past > b_current)){
+        minute--;
+      }
+  //    if((a_current == 0) && (b_past > b_current)){
+  //      minute++;
+  //    }
+  //    if((a_current == 0) && (b_past < b_current)){
+  //      minute--;
+  //    }
+    } 
+    a_past = a_current;
+    b_past = b_current;
+  }
+
+  else{ 
+    if(((encoder & (1<<en1A)) == 0) && (prevEncoder0 == 1)){ 	// checks for falling edge of
+                                                           	// encoder1.A 
+      if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  	// if encoder1.B is different from encoder1.A, clockwise
+        aHour++;
+      }
+      else{
+        aHour--;
+      }
     }
-    if((a_current == 1) && (b_past > b_current)){
-      minute--;
-    }
-//    if((a_current == 0) && (b_past > b_current)){
-//      minute++;
-//    }
-//    if((a_current == 0) && (b_past < b_current)){
-//      minute--;
-//    }
-  } 
-  a_past = a_current;
-  b_past = b_current;
+  prevEncoder0 = (encoder & (1<<en1A));
+// second encoder check why doesn't my logic work for this too?
+   a_current = ((encoder>>2) & 0x01);
+   b_current = ((encoder>>3) & 0x01);
+  
+  if(a_past == a_current){
+      if((a_current==1) && (b_past < b_current)){
+        aMinute++;
+      }
+      if((a_current == 1) && (b_past > b_current)){
+        aMinute--;
+      }
+  //    if((a_current == 0) && (b_past > b_current)){
+  //      minute++;
+  //    }
+  //    if((a_current == 0) && (b_past < b_current)){
+  //      minute--;
+  //    }
+    } 
+    a_past = a_current;
+    b_past = b_current;
+  }
 }
 
 
@@ -470,12 +504,7 @@ int main(){
       case setClk:{
         segButtonInputSet();
         while(!(debounceSwitch(PINA, 0))){ 		// user confirmation may change to button 7
-          encoderInput();
-
-
-
-
-
+	  encoderInput(1);				// checks encoder states and handles min/hour
 // taking care of limits
           if(minute == 60){
             hour++;
@@ -506,8 +535,23 @@ int main(){
       case setAlarm:{
         segButtonInputSet();
         while(!(debounceSwitch(PINA, 1))){ 		// user confirmation may change to button 7
-                          
-        segButtonInputSet(); 
+	  encoderInput(0);				// checks encoder states and handles min/hour
+// taking care of limits
+          if(aMinute == 60){
+            aHour++;
+            aMinute = 0;
+          }
+          else if (aMinute == -1){
+           aHour--;
+           aMinute = 59; 
+          }
+          if(aHour == 24){
+              aHour = 0;
+          }
+          else if(aHour == -1){
+            aHour = 23;
+          }
+          segButtonInputSet(); 
         } 
         segButtonOutputSet();
         TCCR3B |=(1<<CS30);
