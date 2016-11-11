@@ -38,7 +38,7 @@ uint8_t prevEncoder1 = 1;
 #define freq 60000//10096		// between 62000 and 10096
 #define volume 0xC5F0		// 0xFFF0 = off
 uint8_t aHour = 0;
-uint8_t aMinute  =0;
+uint8_t aMinute  =5;
 /********************************
 Modes the Alarm Clock will be in 
 ********************************/
@@ -252,8 +252,8 @@ tcnt0 interrupts come at 7.8125ms internals.
 (1/32768)*256*64 = 500mS 
 *i*********************************************************************/ 
 void timeExtract(){
-  if((count_7ms %128) == 0){ 		// if one second has passed
-//  if((count_7ms %8) == 0){ 		// for debugging. REMOVE on final
+//  if((count_7ms %128) == 0){ 		// if one second has passed
+  if((count_7ms %16) == 0){ 		// for debugging. REMOVE on final
     switch_count++;
     colon ^= 0xFF;			// toggling the colon every second
   }
@@ -497,6 +497,9 @@ int main(){
           adc_get();
           dimFlag = 0;
         }
+        if((minute == aMinute) && hour == aHour){
+          TCCR3B |=(1<<CS30);				//turning alarm on
+        }
         segmentDisplay();				// displaying the 7-seg
         dimFlag++;      
         break;
@@ -551,10 +554,15 @@ int main(){
           else if(aHour == -1){
             aHour = 23;
           }
+          minOne = position0(aMinute);               	 
+          minTen = position1(aMinute);
+          hOne = position0(aHour);
+          hTen = position1(aHour);
+          segButtonOutputSet();				// switches from push buttons to display
+          segmentDisplay();				// displaying the 7-seg
           segButtonInputSet(); 
         } 
         segButtonOutputSet();
-        TCCR3B |=(1<<CS30);
         mode = clk;
         break;
       }
