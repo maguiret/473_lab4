@@ -35,10 +35,13 @@ uint8_t prevEncoder1 = 1;
 /************************
  for alarm 
 *************************/
-#define freq 60000//10096		// between 62000 and 10096
+#define freq 0xC5F0//10096		// between 62000 and 10096
 #define volume 0xC5F0		// 0xFFF0 = off
 uint8_t aHour = 0;
 uint8_t aMinute  =1;
+uint8_t sHour = 0;
+uint8_t sMinute  =1;
+
 /********************************
 Modes the Alarm Clock will be in 
 ********************************/
@@ -217,7 +220,7 @@ void tcnt1_init(void){
   TCCR1B |= (1<<WGM12)|(1<<CS10);
   TCCR1C = 0x00;
   TCNT1  = 0;
-  OCR1A  = volume; //PE3
+  OCR1A  = freq; //PE3
 //  ICR1   = 0xFFFF;
 
 //  TCCR1A |= (1<<COM1A0);
@@ -382,7 +385,7 @@ void adc_get(){
 collects the encoder input and changes hour, minutes accordinly
 used for LCD too
 ****************************************************************/
-encoderInput(uint8_t flag){
+void encoderInput(uint8_t flag){
   // loading encoder data into shift register
   PORTE |= (1<<PE5);             				// sets CLK INH high
   PORTE &= ~(1<<PE6);            				// toggle SHLD low to high           
@@ -393,7 +396,7 @@ encoderInput(uint8_t flag){
   while(bit_is_clear(SPSR,SPIF)) {}              		// wait till data sent out 
   encoder = SPDR;                                  		// collecting input from encoders
   PORTE |= (1<<PE5);                               		// setting CLK INH back to high
-  if(flag){ 
+  if(flag == 2){ 						// setting time
     if(((encoder & (1<<en1A)) == 0) && (prevEncoder0 == 1)){ 	// checks for falling edge of
                                                            	// encoder1.A 
       if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  	// if encoder1.B is different from encoder1.A, clockwise
@@ -403,18 +406,18 @@ encoderInput(uint8_t flag){
         hour--;
       }
     }
-  prevEncoder0 = (encoder & (1<<en1A));
+    prevEncoder0 = (encoder & (1<<en1A));
 // second encoder check why doesn't my logic work for this too?
-   a_current = ((encoder>>2) & 0x01);
-   b_current = ((encoder>>3) & 0x01);
+    a_current = ((encoder>>2) & 0x01);
+    b_current = ((encoder>>3) & 0x01);
   
-  if(a_past == a_current){
+    if(a_past == a_current){
       if((a_current==1) && (b_past < b_current)){
         minute++;
-      }
-      if((a_current == 1) && (b_past > b_current)){
-        minute--;
-      }
+    }
+    if((a_current == 1) && (b_past > b_current)){
+      minute--;
+    }
   //    if((a_current == 0) && (b_past > b_current)){
   //      minute++;
   //    }
@@ -425,8 +428,8 @@ encoderInput(uint8_t flag){
     a_past = a_current;
     b_past = b_current;
   }
-
-  else{ 
+//sets the alarm hour
+  else if(flag == 1){ 						// setting alarm clock
     if(((encoder & (1<<en1A)) == 0) && (prevEncoder0 == 1)){ 	// checks for falling edge of
                                                            	// encoder1.A 
       if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  	// if encoder1.B is different from encoder1.A, clockwise
@@ -458,6 +461,40 @@ encoderInput(uint8_t flag){
     a_past = a_current;
     b_past = b_current;
   }
+//sets alarm clock +5 minutes (snooze)
+//  else if(flag == 0){						// setting snooze
+//    if(((encoder & (1<<en1A)) == 0) && (prevEncoder0 == 1)){ 	// checks for falling edge of
+//                                                               	// encoder1.A 
+//      if((encoder & (1<<en1A)) != (encoder & (1<<en1B))){  	// if encoder1.B is different from encoder1.A, clockwise
+//        hour++;
+//      }
+//      else{
+//        hour--;
+//      }
+//    }
+//    prevEncoder0 = (encoder & (1<<en1A));
+//    // second encoder check why doesn't my logic work for this too?
+//    a_current = ((encoder>>2) & 0x01);
+//    b_current = ((encoder>>3) & 0x01);
+//      
+//    if(a_past == a_current){
+//      if((a_current==1) && (b_past < b_current)){
+//        minute++;
+//      }
+//      if((a_current == 1) && (b_past > b_current)){
+//         minute--;
+//      }
+//   //    if((a_current == 0) && (b_past > b_current)){
+//   //      minute++;
+//   //    }
+//   //    if((a_current == 0) && (b_past < b_current)){
+//   //      minute--;
+//   //    }
+//    } 
+//    a_past = a_current;
+//    b_past = b_current;
+//  }
+
 }
 
 
@@ -497,22 +534,38 @@ int main(){
           adc_get();
           dimFlag = 0;
         }
+// alarm sounding check
         if((minute == aMinute) && hour == aHour){
           TCCR3B |=(1<<CS30);				// turning alarm on
         }
         segButtonInputSet();
         if(debounceSwitch(PINA,6)){
           TCCR3B &= ~(1<<CS30);				// turning alarm off
+          OCR3A = 0xFFF0;
+        }
+        else if(debounceSwitch(PINA, 7)){
+          OCR3A = 0xFFF0;
+          TCCR3B &= ~(1<<CS30);				// turning snooze on
+          sMinute = minute + 1;
+          sHour = hour;
+          if(sMinute >= 60){
+            sHour++;
+            sMinute = sMinute - 60;
+          }
+        }
+        if((minute == sMinute) && (hour == sHour)){
+          TCCR3B |=(1<<CS30);
         }
         segButtonOutputSet();
         segmentDisplay();				// displaying the 7-seg
         dimFlag++;      
+        OCR3A = 0xC5F0;
         break;
       }
       case setClk:{
         segButtonInputSet();
         while(!(debounceSwitch(PINA, 0))){ 		// user confirmation may change to button 7
-	  encoderInput(1);				// checks encoder states and handles min/hour
+	  encoderInput(2);				// checks encoder states and handles min/hour
 // taking care of limits
           if(minute == 60){
             hour++;
@@ -543,7 +596,7 @@ int main(){
       case setAlarm:{
         segButtonInputSet();
         while(!(debounceSwitch(PINA, 1))){ 		// user confirmation may change to button 7
-	  encoderInput(0);				// checks encoder states and handles min/hour
+	  encoderInput(1);				// checks encoder states and handles min/hour
 // taking care of limits
           if(aMinute == 60){
             aHour++;
