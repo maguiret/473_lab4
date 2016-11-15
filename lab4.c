@@ -37,10 +37,10 @@ uint8_t prevEncoder1 = 1;
 *************************/
 #define freq 0xC5F0//10096		// between 62000 and 10096
 #define volume 0xC5F0		// 0xFFF0 = off
-uint8_t aHour = 0;
-uint8_t aMinute  =1;
-uint8_t sHour = 0;
-uint8_t sMinute  =1;
+uint8_t aHour 	= 0;
+uint8_t aMinute = 1;
+uint8_t sHour 	= 5;
+uint8_t sMinute = 1;
 
 /********************************
 Modes the Alarm Clock will be in 
@@ -177,7 +177,7 @@ void segButtonOutputSet(){
   _delay_ms(1);
 }
 void segButtonInputSet(){
- PORTD = 0x70;                          // tristate buffer for pushbuttons enabled
+ PORTF = 0x70;                          // tristate buffer for pushbuttons enabled
  DDRA = 0x00;                           // PORTA set as input
  PORTA = 0xFF;                          // PORTA as pullups
  _delay_ms(1);
@@ -185,8 +185,8 @@ void segButtonInputSet(){
 
 void segButtonInit(){
   DDRA = 0xFF; 		 		 // segments on/pushbuttons off
-  DDRD = 0x70;		 		 // pin 4-7 on portb set to output
-  PORTD = 0x00;		 		 // digit 4. one = 0x00 ten = 0x10 
+  DDRF = 0x70;		 		 // pin 4-7 on portb set to output
+  PORTF = 0x00;		 		 // digit 4. one = 0x00 ten = 0x10 
 			 		 //hundred = 0x30 thousand = 0x40
 }
 
@@ -294,19 +294,19 @@ ISR(TIMER0_COMP_vect){
 *******************************************************/
 void segmentDisplay(){
   // this section handles the 7-seg displaying segments
-    PORTD &= (0<<PF6)|(0<<PF5)|(0<<PF4);//0x00;		// setting digit position 
+    PORTF &= (0<<PF6)|(0<<PF5)|(0<<PF4);//0x00;		// setting digit position 
     LEDSegment(minOne);					// settings segments based on digit position
     _delay_us(300);					// without delay -> ghosting
     PORTA = 0xFF;			 		// eliminates all ghosting
   
   // displaying tens
-    PORTD = (0<<PF6)|(0<<PF5)|(1<<PF4);//0x10;
+    PORTF = (0<<PF6)|(0<<PF5)|(1<<PF4);//0x10;
       LEDSegment(minTen);
     _delay_us(300);					
     PORTA = 0xFF;
   			
   // displaying colon
-    PORTD =(0<<PF6)|(1<<PF5)|(0<<PF4);// 0x30;
+    PORTF =(0<<PF6)|(1<<PF5)|(0<<PF4);// 0x30;
     if(colon){
       PORTA = 0xFC; 
     }
@@ -317,7 +317,7 @@ void segmentDisplay(){
     PORTA = 0xFF;			 
   
   //displaying hundreds
-    PORTD =(0<<PF6)|(1<<PF5)|(1<<PF4);// 0x30;
+    PORTF =(0<<PF6)|(1<<PF5)|(1<<PF4);// 0x30;
 //    if(hour <10){
 //      PORTA = 0xFF;
 //    }
@@ -327,7 +327,7 @@ void segmentDisplay(){
     _delay_us(300);			
     PORTA = 0xFF;			 
   
-    PORTD =(1<<PF6)|(0<<PF5)|(0<<PF4);// 0x40;
+    PORTF =(1<<PF6)|(0<<PF5)|(0<<PF4);// 0x40;
     if(hour<10){
       PORTA = 0xFF;
     }
@@ -497,6 +497,35 @@ void encoderInput(uint8_t flag){
 
 }
 
+/**********************************************
+ This fucntion is used to send data to the LCD
+ Taken from R. Traylor
+***********************************************/
+void send_lcd(uint8_t comd_or_char, uint8_t byte){
+  SPDR = (cmd_or_char)? x001 : 0x00;
+  while(bit_is_clear(SPSR,SPIF)){}
+  SPDR = byte;
+  while(bit_is_clear(SPSR,SPIF)){}
+  PORTF |= 0x08; PORTF &= ~(0x08);	//toggling PORTF.3, LCD strobe trigger
+}
+
+/**********************************************
+ initalize the LCD
+ Take from R. Traylor 11.14.2016 
+***********************************************/
+void lcd_init(void){
+//  _delay_ms(16);
+  DDRF |= (1<<PF3);                    
+  send_lcd(CMD_BYTE, 0x30, 7000); //send cmd sequence 3 times 
+  send_lcd(CMD_BYTE, 0x30, 7000);
+  send_lcd(CMD_BYTE, 0x30, 7000);
+  send_lcd(CMD_BYTE, 0x38, 5000);
+  send_lcd(CMD_BYTE, 0x08, 5000);
+  send_lcd(CMD_BYTE, 0x01, 5000);
+  send_lcd(CMD_BYTE, 0x06, 5000);
+  send_lcd(CMD_BYTE, 0x0C + (CURSOR_VISIBLE<<1) + CURSOR_BLINK, 5);
+ 
+}
 
 int main(){
   // initialize
