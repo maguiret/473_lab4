@@ -10,8 +10,8 @@
 for lcd display
 **************/
 #define CMD_BYTE 0x01
-char on[9] = "ALARM ON";
-char off[9]= "ALARM OFF";
+//char on[9] = "ALARM ON";
+//char off[9]= "ALARM OFF";
 uint8_t i = 0;
 uint8_t dimFlag = 0x00;
 uint8_t a_current = 0, b_current = 0, a_past = 0, b_past = 0;
@@ -615,6 +615,7 @@ int main(){
   tcnt1_init();						// alarm noise
   tcnt0_init();						// initialize clock
   spi_init();
+  lcdInit();
   encoder_init();
   sei();						// enable interrupts before entering loop
   //set default mode
@@ -663,8 +664,15 @@ int main(){
               snoozeFlag = 0;
             }
           }
-          lcdInit();
-          lcdPutStr("ARMED");
+          lcdPutStr("Alarm is On ");				//putting string on lcd
+//resetting cursor to start
+          SPDR = 0x00;                            
+          while (!(SPSR & 0x80)) {}       
+          SPDR = 0x02;                                     
+          while (!(SPSR & 0x80)) {}       
+          PORTF |= 0x08;                          
+          PORTF &= ~0x08;                         
+          _delay_ms(2);                         
         }
 //lcd part
 //        lcd_init();
