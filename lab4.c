@@ -42,11 +42,13 @@ uint8_t prevEncoder1 = 1;
 *************************/
 #define freq 0xC5F0//10096		// between 62000 and 10096
 #define volume 0xC5F0		// 0xFFF0 = off
-uint8_t aHour 	= 0;
-uint8_t aMinute = 1;
-uint8_t sHour 	= 5;
-uint8_t sMinute = 1;
+int aHour = 0, aMinute = 1, sHour = 0, sMinute = 1;
+//uint8_t aHour 	= 0;
+//uint8_t aMinute = 1;
+//uint8_t sHour 	= 5;
+//uint8_t sMinute = 1;
 uint8_t alarming = 0;
+uint8_t snoozeFlag = 0;
 
 /********************************
 Modes the Alarm Clock will be in 
@@ -298,7 +300,7 @@ ISR(TIMER0_COMP_vect){
 /******************************************************
  This function displays each digit's value on the 7-seg
 *******************************************************/
-void segmentDisplay(){
+void segmentDisplay(uint8_t flag){
   // this section handles the 7-seg displaying segments
     PORTF &= (0<<PF6)|(0<<PF5)|(0<<PF4);//0x00;		// setting digit position 
     LEDSegment(minOne);					// settings segments based on digit position
@@ -334,11 +336,21 @@ void segmentDisplay(){
     PORTA = 0xFF;			 
   
     PORTF =(1<<PF6)|(0<<PF5)|(0<<PF4);// 0x40;
-    if(hour<10){
-      PORTA = 0xFF;
+    if(flag == 1){
+      if(hour<10){
+        PORTA = 0xFF;
+      }
+      else{
+        LEDSegment(hTen);
+      }
     }
-    else{
-      LEDSegment(hTen);
+    else if(flag == 2){
+      if(aHour<10){
+        PORTA = 0xFF;
+      }
+      else{
+        LEDSegment(hTen);
+      }
     }
     _delay_us(300);		
     PORTA = 0xFF;			 	
@@ -571,7 +583,7 @@ int main(){
           dimFlag = 0;
         }
 // alarm sounding check
-        if(alarming){
+        if(alarming == 1){
           if((minute == aMinute) && hour == aHour){
             TCCR3B |=(1<<CS30);				// turning alarm on
           }
@@ -579,24 +591,27 @@ int main(){
           if(debounceSwitch(PINA,6)){
             TCCR3B &= ~(1<<CS30);				// turning alarm off
             OCR3A = 0xFFF0;
-            alarming &= 0;					//turning alarming flag off
+            alarming = 0;					//turning alarming flag off
           }
           else if(debounceSwitch(PINA, 7)){
             OCR3A = 0xFFF0;
             TCCR3B &= ~(1<<CS30);				// turning snooze on
             sMinute = minute + 1;
-            sHour = hour;
+            snoozeFlag = 1;
             if(sMinute >= 60){
               sHour++;
               sMinute = sMinute - 60;
             }
           }
-        }
-        if((minute == sMinute) && (hour == sHour)){
-          TCCR3B |=(1<<CS30);
+          if(snoozeFlag == 1){
+            if((minute == sMinute) && (hour == sHour)){
+              TCCR3B |=(1<<CS30);
+              snoozeFlag = 0;
+            }
+          }
         }
         segButtonOutputSet();
-        segmentDisplay();				// displaying the 7-seg
+        segmentDisplay(1);				// displaying the 7-seg
         dimFlag++;      
         OCR3A = 0xC5F0;
         break;
@@ -625,7 +640,7 @@ int main(){
           hOne = position0(hour);
           hTen = position1(hour);
           segButtonOutputSet();				// switches from push buttons to display
-          segmentDisplay();				// displaying the 7-seg
+          segmentDisplay(1);				// displaying the 7-seg
           segButtonInputSet();
         }
         segButtonOutputSet();
@@ -656,12 +671,12 @@ int main(){
           hOne = position0(aHour);
           hTen = position1(aHour);
           segButtonOutputSet();				// switches from push buttons to display
-          segmentDisplay();				// displaying the 7-seg
+          segmentDisplay(2);				// displaying the 7-seg
           segButtonInputSet(); 
         } 
         segButtonOutputSet();
         mode = clk;
-        alarming = 0xFF;
+        alarming = 1;
         break;
       }
     }
