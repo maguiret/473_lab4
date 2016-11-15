@@ -108,37 +108,96 @@ void LCD_PutStr(char *lcd_str) {
 }
 
 int main(){
-  while(1){
 	DDRF |= 0x08;  //port F bit 3 is enable for LCD
 	PORTB |= 0x00; //port B initialization for SPI
 	DDRB |= 0x07;  //Turn on SS, MOSI, SCLK
 	//Master mode, Clock=clk/2, Cycle half phase, Low polarity, MSB first
 	SPCR = 0x50;
 	SPSR = 0x01;
-	
+        uint8_t i = 0;
 
-
-        _delay_ms(15); // TODO: why must this be in here
-
+  while(1){
+        _delay_ms(15);
 	// request 8 bit interface mode
-	LCD_CMD(0x38);
+       // SPDR = 0x00;
+       // while(!(SPSR & 0x08)){}
+       // SPDR = 0x38;
+       // while(!(SPSR & 0x08)){}
+       // PORTF |= 0x08;
+       // PORTF &= ~0x08;
+       // _delay_us(100);
+        SPDR = 0x00;                            
+        while (!(SPSR & 0x80)) {}       
+        SPDR = 0x38;                                     
+        while (!(SPSR & 0x80)) {}       
+        PORTF |= 0x08;                          
+        PORTF &= ~0x08;                        
+        _delay_us(100);                       
+
+
+//	LCD_CMD(0x38);
 	_delay_ms(5);
 
 	// display off
+        SPDR = 0x00;                            
+        while (!(SPSR & 0x80)) {}       
+        SPDR = 0x06;                                     
+        while (!(SPSR & 0x80)) {}       
+        PORTF |= 0x08;                          
+        PORTF &= ~0x08;                        
+        _delay_us(100);                       
 	LCD_CMD(0x08);
 	_delay_ms(2);
 
 	// choose entry mode so that the cursor is incremented
-	LCD_CMD(0x06);
+//	LCD_CMD(0x06);
 	/*
 		Clear the screen and enable the LCD
 	*/	
 	// clear display
-	LCD_CMD(0x01);
+        SPDR = 0x00;                            
+        while (!(SPSR & 0x80)) {}       
+        SPDR = 0x01;                                     
+        while (!(SPSR & 0x80)) {}       
+        PORTF |= 0x08;                          
+        PORTF &= ~0x08;                        
+        _delay_us(100);                       
+//	LCD_CMD(0x01);
 	_delay_ms(5);
 	
 	// display on
-	LCD_CMD(0x0C);
-    LCD_PutStr("REFLEX TESTER");
+        SPDR = 0x00;                            
+        while (!(SPSR & 0x80)) {}       
+        SPDR = 0x0C;                                     
+        while (!(SPSR & 0x80)) {}       
+        PORTF |= 0x08;                          
+        PORTF &= ~0x08;                        
+        _delay_us(100);                       
+//	LCD_CMD(0x0C);
+	
+
+ 	char thing[4] = {'a', 'b', 'c', '3'};
+        SPDR = 0x01;                           
+        while (!(SPSR & 0x80)) {}       
+        SPDR = 'a';                                     //does not like
+        while (!(SPSR & 0x80)) {}       
+        PORTF |= 0x08;                          
+        PORTF &= ~0x08;                         
+        _delay_us(100);                         
+        i++;
+        if(i >=strlen(thing)){
+          i = 0;
+        }
+
+        SPDR = 0x00;                           
+        while (!(SPSR & 0x80)) {}       
+        SPDR = 0x1E;                                     //does not like
+        while (!(SPSR & 0x80)) {}       
+        PORTF |= 0x08;                          
+        PORTF &= ~0x08;                         
+        _delay_us(100);                         
+        
+
+//    LCD_PutStr("REFLEX TESTER");
   }
 }
