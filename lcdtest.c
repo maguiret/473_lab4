@@ -118,14 +118,7 @@ int main(){
 
   while(1){
         _delay_ms(15);
-	// request 8 bit interface mode
-       // SPDR = 0x00;
-       // while(!(SPSR & 0x08)){}
-       // SPDR = 0x38;
-       // while(!(SPSR & 0x08)){}
-       // PORTF |= 0x08;
-       // PORTF &= ~0x08;
-       // _delay_us(100);
+       // request 8 bit interface mode
         SPDR = 0x00;                            
         while (!(SPSR & 0x80)) {}       
         SPDR = 0x38;                                     
@@ -141,16 +134,23 @@ int main(){
 	// display off
         SPDR = 0x00;                            
         while (!(SPSR & 0x80)) {}       
+        SPDR = 0x08;                                     
+        while (!(SPSR & 0x80)) {}       
+        PORTF |= 0x08;                          
+        PORTF &= ~0x08;                        
+        _delay_us(100);                       
+	//LCD_CMD(0x08);
+	_delay_ms(2);
+
+	// choose entry mode so that the cursor is incremented
+        SPDR = 0x00;                            
+        while (!(SPSR & 0x80)) {}       
         SPDR = 0x06;                                     
         while (!(SPSR & 0x80)) {}       
         PORTF |= 0x08;                          
         PORTF &= ~0x08;                        
         _delay_us(100);                       
-	LCD_CMD(0x08);
-	_delay_ms(2);
-
-	// choose entry mode so that the cursor is incremented
-//	LCD_CMD(0x06);
+	//LCD_CMD(0x06);
 	/*
 		Clear the screen and enable the LCD
 	*/	
@@ -176,28 +176,8 @@ int main(){
 //	LCD_CMD(0x0C);
 	
 
- 	char thing[4] = {'a', 'b', 'c', '3'};
-        SPDR = 0x01;                           
-        while (!(SPSR & 0x80)) {}       
-        SPDR = 'a';                                     //does not like
-        while (!(SPSR & 0x80)) {}       
-        PORTF |= 0x08;                          
-        PORTF &= ~0x08;                         
-        _delay_us(100);                         
-        i++;
-        if(i >=strlen(thing)){
-          i = 0;
-        }
-
-        SPDR = 0x00;                           
-        while (!(SPSR & 0x80)) {}       
-        SPDR = 0x1E;                                     //does not like
-        while (!(SPSR & 0x80)) {}       
-        PORTF |= 0x08;                          
-        PORTF &= ~0x08;                         
-        _delay_us(100);                         
         
 
-//    LCD_PutStr("REFLEX TESTER");
+    LCD_PutStr("REFLEX TESTER");
   }
 }
