@@ -41,6 +41,7 @@ uint8_t aHour 	= 0;
 uint8_t aMinute = 1;
 uint8_t sHour 	= 5;
 uint8_t sMinute = 1;
+uint8_t alarming = 0;
 
 /********************************
 Modes the Alarm Clock will be in 
@@ -501,31 +502,31 @@ void encoderInput(uint8_t flag){
  This fucntion is used to send data to the LCD
  Taken from R. Traylor
 ***********************************************/
-void send_lcd(uint8_t comd_or_char, uint8_t byte){
-  SPDR = (cmd_or_char)? x001 : 0x00;
-  while(bit_is_clear(SPSR,SPIF)){}
-  SPDR = byte;
-  while(bit_is_clear(SPSR,SPIF)){}
-  PORTF |= 0x08; PORTF &= ~(0x08);	//toggling PORTF.3, LCD strobe trigger
-}
+//void send_lcd(uint8_t cmd_or_char, uint8_t byte){
+//  SPDR = (cmd_or_char)? 0x01 : 0x00;
+//  while(bit_is_clear(SPSR,SPIF)){}
+//  SPDR = byte;
+//  while(bit_is_clear(SPSR,SPIF)){}
+//  PORTF |= 0x08; PORTF &= ~(0x08);	//toggling PORTF.3, LCD strobe trigger
+//}
 
 /**********************************************
  initalize the LCD
  Take from R. Traylor 11.14.2016 
 ***********************************************/
-void lcd_init(void){
-//  _delay_ms(16);
-  DDRF |= (1<<PF3);                    
-  send_lcd(CMD_BYTE, 0x30, 7000); //send cmd sequence 3 times 
-  send_lcd(CMD_BYTE, 0x30, 7000);
-  send_lcd(CMD_BYTE, 0x30, 7000);
-  send_lcd(CMD_BYTE, 0x38, 5000);
-  send_lcd(CMD_BYTE, 0x08, 5000);
-  send_lcd(CMD_BYTE, 0x01, 5000);
-  send_lcd(CMD_BYTE, 0x06, 5000);
-  send_lcd(CMD_BYTE, 0x0C + (CURSOR_VISIBLE<<1) + CURSOR_BLINK, 5);
- 
-}
+//void lcd_init(void){
+////  _delay_ms(16);
+//  DDRF |= (1<<PF3);                    
+//  send_lcd(CMD_BYTE, 0x30, 7000); //send cmd sequence 3 times 
+//  send_lcd(CMD_BYTE, 0x30, 7000);
+//  send_lcd(CMD_BYTE, 0x30, 7000);
+//  send_lcd(CMD_BYTE, 0x38, 5000);
+//  send_lcd(CMD_BYTE, 0x08, 5000);
+//  send_lcd(CMD_BYTE, 0x01, 5000);
+//  send_lcd(CMD_BYTE, 0x06, 5000);
+//  send_lcd(CMD_BYTE, 0x0C + (CURSOR_VISIBLE<<1) + CURSOR_BLINK, 5);
+// 
+//}
 
 int main(){
   // initialize
@@ -564,22 +565,25 @@ int main(){
           dimFlag = 0;
         }
 // alarm sounding check
-        if((minute == aMinute) && hour == aHour){
-          TCCR3B |=(1<<CS30);				// turning alarm on
-        }
-        segButtonInputSet();
-        if(debounceSwitch(PINA,6)){
-          TCCR3B &= ~(1<<CS30);				// turning alarm off
-          OCR3A = 0xFFF0;
-        }
-        else if(debounceSwitch(PINA, 7)){
-          OCR3A = 0xFFF0;
-          TCCR3B &= ~(1<<CS30);				// turning snooze on
-          sMinute = minute + 1;
-          sHour = hour;
-          if(sMinute >= 60){
-            sHour++;
-            sMinute = sMinute - 60;
+        if(alarming){
+          if((minute == aMinute) && hour == aHour){
+            TCCR3B |=(1<<CS30);				// turning alarm on
+          }
+          segButtonInputSet();
+          if(debounceSwitch(PINA,6)){
+            TCCR3B &= ~(1<<CS30);				// turning alarm off
+            OCR3A = 0xFFF0;
+            alarming &= 0;					//turning alarming flag off
+          }
+          else if(debounceSwitch(PINA, 7)){
+            OCR3A = 0xFFF0;
+            TCCR3B &= ~(1<<CS30);				// turning snooze on
+            sMinute = minute + 1;
+            sHour = hour;
+            if(sMinute >= 60){
+              sHour++;
+              sMinute = sMinute - 60;
+            }
           }
         }
         if((minute == sMinute) && (hour == sHour)){
@@ -651,6 +655,7 @@ int main(){
         } 
         segButtonOutputSet();
         mode = clk;
+        alarming = 0xFF;
         break;
       }
     }
