@@ -3,13 +3,16 @@
 #include <util/delay.h>
 #include <string.h>
 #include <stdlib.h>
-//#include "hd44780.h"
+#include "hd44780.h"
 
 
 /*************
 for lcd display
 **************/
 #define CMD_BYTE 0x01
+char on[9] = "ALARM ON";
+char off[9]= "ALARM OFF";
+uint8_t i = 0;
 uint8_t dimFlag = 0x00;
 uint8_t a_current = 0, b_current = 0, a_past = 0, b_past = 0;
 /*************
@@ -603,13 +606,16 @@ int main(){
               sMinute = sMinute - 60;
             }
           }
-          if(snoozeFlag == 1){
+          if(snoozeFlag == 1){					// alarm on when snooze time is visited on clk
             if((minute == sMinute) && (hour == sHour)){
               TCCR3B |=(1<<CS30);
               snoozeFlag = 0;
             }
           }
         }
+//lcd part
+//        lcd_init();
+//        refresh_lcd(on);
         segButtonOutputSet();
         segmentDisplay(1);				// displaying the 7-seg
         dimFlag++;      
