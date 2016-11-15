@@ -196,7 +196,7 @@ void segButtonInputSet(){
 
 void segButtonInit(){
   DDRA = 0xFF; 		 		 // segments on/pushbuttons off
-  DDRF = 0x70;		 		 // pin 4-7 on portb set to output
+  DDRF |= 0x70;		 		 // pin 4-7 on portb set to output
   PORTF = 0x00;		 		 // digit 4. one = 0x00 ten = 0x10 
 			 		 //hundred = 0x30 thousand = 0x40
 }
@@ -519,35 +519,86 @@ void encoderInput(uint8_t flag){
 }
 
 /**********************************************
- This fucntion is used to send data to the LCD
- Taken from R. Traylor
+ initalize the LCD
+ Take from R. Traylor 11.14.2016 
 ***********************************************/
-//void send_lcd(uint8_t cmd_or_char, uint8_t byte){
-//  SPDR = (cmd_or_char)? 0x01 : 0x00;
-//  SPDR = (cmd_or_char);
-//  while(bit_is_clear(SPSR,SPIF)){}
-//  SPDR = byte;
-//  while(bit_is_clear(SPSR,SPIF)){}
-//  PORTF |= 0x08; PORTF &= ~(0x08);	//toggling PORTF.3, LCD strobe trigger
-//}
+void lcdInit(void){
+        _delay_ms(15);
+       // request 8 bit interface mode
+        SPDR = 0x00;
+        while (!(SPSR & 0x80)) {}
+        SPDR = 0x38;
+        while (!(SPSR & 0x80)) {}
+        PORTF |= 0x08;
+        PORTF &= ~0x08;
+        _delay_us(100);
+
+
+//      LCD_CMD(0x38);
+        _delay_ms(5);
+
+        // display off
+        SPDR = 0x00;
+        while (!(SPSR & 0x80)) {}
+        SPDR = 0x08;
+        while (!(SPSR & 0x80)) {}
+        PORTF |= 0x08;
+        PORTF &= ~0x08;
+        _delay_us(100);
+        //LCD_CMD(0x08);
+        _delay_ms(2);
+
+        // choose entry mode so that the cursor is incremented
+        SPDR = 0x00;
+        while (!(SPSR & 0x80)) {}
+        SPDR = 0x06;
+        while (!(SPSR & 0x80)) {}
+        PORTF |= 0x08;
+        PORTF &= ~0x08;
+        _delay_us(100);
+        //LCD_CMD(0x06);
+        /*
+                Clear the screen and enable the LCD
+        */
+        // clear display
+        SPDR = 0x00;
+        while (!(SPSR & 0x80)) {}
+        SPDR = 0x01;
+        while (!(SPSR & 0x80)) {}
+        PORTF |= 0x08;
+        PORTF &= ~0x08;
+        _delay_us(100);
+//      LCD_CMD(0x01);
+        _delay_ms(5);
+
+        // display on
+        SPDR = 0x00;
+        while (!(SPSR & 0x80)) {}
+        SPDR = 0x0C;
+        while (!(SPSR & 0x80)) {}
+        PORTF |= 0x08;
+        PORTF &= ~0x08;
+	_delay_us(100);
+}
 
 /**********************************************
  initalize the LCD
  Take from R. Traylor 11.14.2016 
 ***********************************************/
-//void lcd_init(void){
-//  _delay_ms(16);
-//  DDRF |= (1<<PF3);                    
-//  send_lcd(CMD_BYTE, 0x30, 7000); //send cmd sequence 3 times 
-//  send_lcd(CMD_BYTE, 0x30, 7000);
-//  send_lcd(CMD_BYTE, 0x30, 7000);
-//  send_lcd(CMD_BYTE, 0x38, 5000);
-//  send_lcd(CMD_BYTE, 0x08, 5000);
-//  send_lcd(CMD_BYTE, 0x01, 5000);
-//  send_lcd(CMD_BYTE, 0x06, 5000);
-//  send_lcd(CMD_BYTE, 0x0C + (CURSOR_VISIBLE<<1) + CURSOR_BLINK, 5);
- 
-//}
+void lcdPutStr(char *lcd_str) {
+  uint8_t count;
+  for (count=0; count<=(strlen(lcd_str)-1); count++){
+    //LCD_DATA(lcd_str[count]);
+    SPDR = 0x01;                            
+    while (!(SPSR & 0x80)) {}       
+    SPDR = lcd_str[count];                                     
+    while (!(SPSR & 0x80)) {}       
+    PORTF |= 0x08;                          
+    PORTF &= ~0x08;                         
+    _delay_us(100);                         
+  }
+}
+
 
 int main(){
   // initialize
@@ -612,6 +663,8 @@ int main(){
               snoozeFlag = 0;
             }
           }
+          lcdInit();
+          lcdPutStr("ARMED");
         }
 //lcd part
 //        lcd_init();
