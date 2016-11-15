@@ -3,8 +3,13 @@
 #include <util/delay.h>
 #include <string.h>
 #include <stdlib.h>
-#include "hd44780.h"
-//
+//#include "hd44780.h"
+
+
+/*************
+for lcd display
+**************/
+#define CMD_BYTE 0x01
 uint8_t dimFlag = 0x00;
 uint8_t a_current = 0, b_current = 0, a_past = 0, b_past = 0;
 /*************
@@ -504,6 +509,7 @@ void encoderInput(uint8_t flag){
 ***********************************************/
 //void send_lcd(uint8_t cmd_or_char, uint8_t byte){
 //  SPDR = (cmd_or_char)? 0x01 : 0x00;
+//  SPDR = (cmd_or_char);
 //  while(bit_is_clear(SPSR,SPIF)){}
 //  SPDR = byte;
 //  while(bit_is_clear(SPSR,SPIF)){}
@@ -515,7 +521,7 @@ void encoderInput(uint8_t flag){
  Take from R. Traylor 11.14.2016 
 ***********************************************/
 //void lcd_init(void){
-////  _delay_ms(16);
+//  _delay_ms(16);
 //  DDRF |= (1<<PF3);                    
 //  send_lcd(CMD_BYTE, 0x30, 7000); //send cmd sequence 3 times 
 //  send_lcd(CMD_BYTE, 0x30, 7000);
@@ -525,7 +531,7 @@ void encoderInput(uint8_t flag){
 //  send_lcd(CMD_BYTE, 0x01, 5000);
 //  send_lcd(CMD_BYTE, 0x06, 5000);
 //  send_lcd(CMD_BYTE, 0x0C + (CURSOR_VISIBLE<<1) + CURSOR_BLINK, 5);
-// 
+ 
 //}
 
 int main(){

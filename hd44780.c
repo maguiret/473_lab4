@@ -267,7 +267,7 @@ void lcd_init(void){
   _delay_ms(16);      //power up delay
 #if SPI_MODE==1       //assumption is that the SPI port is intialized
   //TODO: kludge alert! should not be here.
-  DDRF=0x08;          //port F bit 3 is enable for LCD in SPI mode
+  DDRF |=0x08;          //port F bit 3 is enable for LCD in SPI mode
   send_lcd(CMD_BYTE, 0x30, 7000); //send cmd sequence 3 times 
   send_lcd(CMD_BYTE, 0x30, 7000);
   send_lcd(CMD_BYTE, 0x30, 7000);
