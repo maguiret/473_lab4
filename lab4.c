@@ -709,9 +709,27 @@ int main(){
           segButtonOutputSet();				// switches from push buttons to display
           segmentDisplay(1);				// displaying the 7-seg
           segButtonInputSet();
+
+          lcdPutStr("What time is it? ");				//putting string on lcd
+//resetting cursor to start
+          SPDR = 0x00;                            
+          while (!(SPSR & 0x80)) {}       
+          SPDR = 0x02;                                     
+          while (!(SPSR & 0x80)) {}       
+          PORTF |= 0x08;                          
+          PORTF &= ~0x08;                         
+          _delay_ms(2);                         
         }
         segButtonOutputSet();
         mode = clk;        
+
+          SPDR = 0x00;                            
+          while (!(SPSR & 0x80)) {}       
+          SPDR = 0x01;                                     
+          while (!(SPSR & 0x80)) {}       
+          PORTF |= 0x08;                          
+          PORTF &= ~0x08;                         
+          _delay_ms(2);                         
         break;
       }
       case setAlarm:{
@@ -740,10 +758,38 @@ int main(){
           segButtonOutputSet();				// switches from push buttons to display
           segmentDisplay(2);				// displaying the 7-seg
           segButtonInputSet(); 
+
+          lcdPutStr("What time do you");				//putting string on lcd
+//resetting cursor to start
+          SPDR = 0x00;                            //setting cursor at second column
+          while (!(SPSR & 0x80)) {}       
+          SPDR = 0xC0;                                     
+          while (!(SPSR & 0x80)) {}       
+          PORTF |= 0x08;                          
+          PORTF &= ~0x08;                         
+          _delay_ms(2);              
+           
+	  lcdPutStr("want to wake up?");
+
+          SPDR = 0x00;                            
+          while (!(SPSR & 0x80)) {}       
+          SPDR = 0x02;                                     
+          while (!(SPSR & 0x80)) {}       
+          PORTF |= 0x08;                          
+          PORTF &= ~0x08;                         
+          _delay_ms(2);                         
         } 
         segButtonOutputSet();
         mode = clk;
         alarming = 1;
+
+        SPDR = 0x00;                            
+        while (!(SPSR & 0x80)) {}       
+        SPDR = 0x01;                                     
+        while (!(SPSR & 0x80)) {}       
+        PORTF |= 0x08;                          
+        PORTF &= ~0x08;                         
+        _delay_ms(2);                         
         break;
       }
     }
