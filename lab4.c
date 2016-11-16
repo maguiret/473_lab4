@@ -674,6 +674,19 @@ int main(){
           PORTF &= ~0x08;                         
           _delay_ms(2);                         
         }
+        else{
+          lcdPutStr("Clock Mode ");				//putting string on lcd
+//resetting cursor to start
+          SPDR = 0x00;                            
+          while (!(SPSR & 0x80)) {}       
+          SPDR = 0x02;                                     
+          while (!(SPSR & 0x80)) {}       
+          PORTF |= 0x08;                          
+          PORTF &= ~0x08;                         
+          _delay_ms(2);                         
+        }
+ 
+        //}
 //lcd part
 //        lcd_init();
 //        refresh_lcd(on);
